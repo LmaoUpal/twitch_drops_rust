@@ -36,15 +36,11 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 15, G: 15, B: 18, A: 1},
-		OnStartup:        app.startup,
-		OnBeforeClose:    app.beforeClose,
-		OnShutdown:       app.shutdown,
-		// A second miner on the same account would fight over the watched channel.
-		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId:               "twitch-drops-miner-3f6c1d2e",
-			OnSecondInstanceLaunch: func(options.SecondInstanceData) { app.showWindow() },
-		},
+		BackgroundColour:   &options.RGBA{R: 15, G: 15, B: 18, A: 1},
+		OnStartup:          app.startup,
+		OnBeforeClose:      app.beforeClose,
+		OnShutdown:         app.shutdown,
+		SingleInstanceLock: singleInstance(app),
 		Bind: []interface{}{
 			app,
 		},
@@ -52,5 +48,17 @@ func main() {
 
 	if err != nil {
 		println("Error:", err.Error())
+	}
+}
+
+// singleInstance keeps one miner per machine: a second one on the same account would fight
+// over the watched channel. Dev builds skip it so they can run next to the installed app.
+func singleInstance(app *App) *options.SingleInstanceLock {
+	if devBuild {
+		return nil
+	}
+	return &options.SingleInstanceLock{
+		UniqueId:               "twitch-drops-miner-3f6c1d2e",
+		OnSecondInstanceLaunch: func(options.SecondInstanceData) { app.showWindow() },
 	}
 }

@@ -172,6 +172,145 @@ export namespace config {
 
 }
 
+export namespace dropsapi {
+	
+	export class Drop {
+	    id: string;
+	    name: string;
+	    imageUrl: string;
+	    requiredMinutes: number;
+	    requiredSubs: number;
+	    // Go type: time
+	    startAt: any;
+	    // Go type: time
+	    endAt: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new Drop(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.imageUrl = source["imageUrl"];
+	        this.requiredMinutes = source["requiredMinutes"];
+	        this.requiredSubs = source["requiredSubs"];
+	        this.startAt = this.convertValues(source["startAt"], null);
+	        this.endAt = this.convertValues(source["endAt"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Channel {
+	    id: string;
+	    login: string;
+	    displayName: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Channel(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.login = source["login"];
+	        this.displayName = source["displayName"];
+	    }
+	}
+	export class Game {
+	    id: string;
+	    name: string;
+	    slug: string;
+	    boxArtUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Game(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.slug = source["slug"];
+	        this.boxArtUrl = source["boxArtUrl"];
+	    }
+	}
+	export class Campaign {
+	    id: string;
+	    name: string;
+	    owner: string;
+	    game: Game;
+	    status: string;
+	    // Go type: time
+	    startAt: any;
+	    // Go type: time
+	    endAt: any;
+	    imageUrl: string;
+	    detailsUrl: string;
+	    accountLinkUrl: string;
+	    channels: Channel[];
+	    drops: Drop[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Campaign(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.owner = source["owner"];
+	        this.game = this.convertValues(source["game"], Game);
+	        this.status = source["status"];
+	        this.startAt = this.convertValues(source["startAt"], null);
+	        this.endAt = this.convertValues(source["endAt"], null);
+	        this.imageUrl = source["imageUrl"];
+	        this.detailsUrl = source["detailsUrl"];
+	        this.accountLinkUrl = source["accountLinkUrl"];
+	        this.channels = this.convertValues(source["channels"], Channel);
+	        this.drops = this.convertValues(source["drops"], Drop);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+
+}
+
 export namespace gql {
 	
 	export class DropSession {
@@ -197,6 +336,46 @@ export namespace gql {
 
 export namespace main {
 	
+	export class AllDrops {
+	    campaigns: dropsapi.Campaign[];
+	    // Go type: time
+	    updatedAt: any;
+	    // Go type: time
+	    fetchedAt: any;
+	    source: string;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AllDrops(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.campaigns = this.convertValues(source["campaigns"], dropsapi.Campaign);
+	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	        this.fetchedAt = this.convertValues(source["fetchedAt"], null);
+	        this.source = source["source"];
+	        this.error = source["error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class AuthStatus {
 	    state: string;
 	    login: string;

@@ -9,7 +9,7 @@ import {BrowserOpenURL} from '../../wailsjs/runtime/runtime';
 import {useStore} from '../store';
 import {campaignPhase, coverImage, dropState, DropState, isRust, parentCampaignId, Phase} from '../lib/derive';
 import {fmtCountdown, fmtDuration, fmtHM, fmtMinutes, fmtRange, fmtViewers, isSet, pct} from '../lib/format';
-import {Avatar, Badge, Banner, Button, Chip, Empty, GameIcon, Progress, Thumb} from '../components/ui';
+import {Avatar, Badge, Banner, Button, Chip, Empty, GameIcon, Progress, Thumb, Select} from '../components/ui';
 import {Key, t, tn} from '../i18n';
 
 const FACEPUNCH_URL = 'https://twitch.facepunch.com/';
@@ -259,13 +259,8 @@ export default function Campaigns() {
                     <Search size={14}/>
                     <input placeholder={t('camp.search')} value={query} onChange={e => setQuery(e.target.value)}/>
                 </label>
-                <label className="input" style={{width: 'auto', paddingRight: 4, borderColor: 'var(--border-strong)'}}>
-                    <Gamepad2 size={14} color="var(--text-primary)"/>
-                    <select value={game} onChange={e => setGame(e.target.value)} style={{fontWeight: 600, cursor: 'pointer'}}>
-                        <option value="">{t('common.allGames')}</option>
-                        {games.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                </label>
+                <Select icon={Gamepad2} value={game} onChange={setGame}
+                        options={[{value: '', label: t('common.allGames')}, ...games.map(g => ({value: g, label: g}))]}/>
                 <Button icon={RefreshCw} title={t('common.refresh')} onClick={refresh} className={refreshing ? 'refreshing' : ''}/>
             </div>
             <div className="toolbar">
