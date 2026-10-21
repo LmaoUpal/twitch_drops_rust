@@ -8,8 +8,10 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
+	"github.com/LmaoUpal/twitch_drops_rust/internal/catalog"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/config"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/auth"
+	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/gql"
 )
 
 const (
@@ -18,6 +20,7 @@ const (
 	defaultAccount = "main"
 
 	eventAuthStatus = "auth:status"
+	eventCampaigns  = "campaigns:update"
 )
 
 // Auth states reported to the UI.
@@ -52,6 +55,12 @@ type App struct {
 	status      AuthStatus
 	token       *auth.Token
 	cancelLogin context.CancelFunc
+
+	sessionID    string // Client-Session-Id for this run
+	campaigns    catalog.Snapshot
+	stopLoop     context.CancelFunc
+	refreshNow   chan struct{}
+	loopForToken string // access token the running campaign loop uses
 }
 
 func NewApp() *App {
@@ -81,7 +90,11 @@ func (a *App) startup(ctx context.Context) {
 		Store:   auth.KeyringStore{Service: keyringService},
 		Account: defaultAccount,
 	}
-	go a.Restore()
+	a.sessionID = gql.NewSessionID()
+	go func() {
+		a.ensureDeviceID() // before any GQL call; network only on first launch
+		a.Restore()
+	}()
 }
 
 // GetConfig returns the current settings.
@@ -176,4 +189,10 @@ func (a *App) setStatus(s AuthStatus, tok *auth.Token) {
 	a.status, a.token = s, tok
 	a.mu.Unlock()
 	runtime.EventsEmit(a.ctx, eventAuthStatus, s)
+	switch {
+	case s.State == authLoggedIn && tok != nil:
+		a.startCampaignLoop(tok)
+	case s.State == authLoggedOut:
+		a.stopCampaignLoop()
+	}
 }

@@ -10,12 +10,20 @@ export function GetAuthStatus() {
   return window['go']['main']['App']['GetAuthStatus']();
 }
 
+export function GetCampaigns() {
+  return window['go']['main']['App']['GetCampaigns']();
+}
+
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
 
 export function Logout() {
   return window['go']['main']['App']['Logout']();
+}
+
+export function RefreshCampaigns() {
+  return window['go']['main']['App']['RefreshCampaigns']();
 }
 
 export function Restore() {

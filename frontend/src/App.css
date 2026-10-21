@@ -71,3 +71,114 @@ h2 {
 .error {
     color: #ff6b6b;
 }
+
+a {
+    color: #bf94ff;
+}
+
+.small {
+    font-size: 0.85rem;
+}
+
+.section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+}
+
+.card.campaign {
+    max-width: none;
+}
+
+.campaign-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.campaign-name {
+    font-weight: bold;
+}
+
+.badges {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+}
+
+.badge {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.75rem;
+    margin-left: 6px;
+    white-space: nowrap;
+}
+
+.badge.active, .badge.ok {
+    background: #1f7a45;
+}
+
+.badge.upcoming {
+    background: #7a5a1f;
+}
+
+.channels {
+    margin: 8px 0;
+}
+
+.channel {
+    margin-right: 12px;
+}
+
+.dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #666;
+    margin-right: 4px;
+}
+
+.dot.on {
+    background: #eb0400;
+}
+
+.drops {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.drop {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.drop img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.drop-info {
+    flex: 1;
+}
+
+.progress {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 4px 0;
+}
+
+.progress > div {
+    height: 100%;
+    background: #9146ff;
+}

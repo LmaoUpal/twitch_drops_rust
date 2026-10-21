@@ -4,6 +4,7 @@ import {GetAuthStatus, GetConfig, Logout} from "../wailsjs/go/main/App";
 import {config, main} from "../wailsjs/go/models";
 import {EventsOn} from "../wailsjs/runtime/runtime";
 import Login from "./components/Login";
+import Campaigns from "./components/Campaigns";
 
 function App() {
     const [cfg, setCfg] = useState<config.Config | null>(null);
@@ -38,10 +39,7 @@ function App() {
                                 {cfg?.games?.map(g => <li key={g}>{g}</li>)}
                             </ol>
                         </section>
-                        <section>
-                            <h2>Campaigns</h2>
-                            <p className="muted">Campaign list arrives in phase 2.</p>
-                        </section>
+                        <Campaigns/>
                     </>
                 )}
             </main>
