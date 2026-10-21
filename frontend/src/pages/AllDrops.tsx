@@ -112,7 +112,8 @@ export default function AllDrops() {
     const upcoming: Row[] = (snapshot?.campaigns ?? [])
         .filter(c => c.source === 'facepunch' && !parentCampaignId(c) && campaignPhase(c, now) === 'upcoming')
         .map(c => ({
-            id: c.id, game: c.game.name, boxArt: '', name: c.name, owner: 'Facepunch', startAt: c.startAt, endAt: c.endAt,
+            id: c.id, game: c.game.name, boxArt: `https://static-cdn.jtvnw.net/ttv-boxart/${c.game.id}_IGDB-120x160.jpg`,
+            name: c.name, owner: 'Facepunch', startAt: c.startAt, endAt: c.endAt,
             channels: [], drops: (c.drops ?? []).map(d => dropsapi.Drop.createFrom({id: d.id, name: d.name, imageUrl: d.imageUrl, requiredMinutes: d.requiredMinutes, requiredSubs: 0})),
             detailsUrl: 'https://twitch.facepunch.com/', upcoming: true,
         }));
