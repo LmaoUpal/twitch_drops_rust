@@ -123,6 +123,7 @@ export namespace config {
 	export class Config {
 	    games: string[];
 	    excludedChannels: string[];
+	    autoMode: boolean;
 	    autoClaim: boolean;
 	    startWithWindows: boolean;
 	    minimizeToTray: boolean;
@@ -139,6 +140,7 @@ export namespace config {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.games = source["games"];
 	        this.excludedChannels = source["excludedChannels"];
+	        this.autoMode = source["autoMode"];
 	        this.autoClaim = source["autoClaim"];
 	        this.startWithWindows = source["startWithWindows"];
 	        this.minimizeToTray = source["minimizeToTray"];
@@ -215,6 +217,93 @@ export namespace main {
 	        this.error = source["error"];
 	    }
 	}
+	export class QueueItem {
+	    channel: models.Channel;
+	    gameName: string;
+	    campaign: string;
+	    drop: string;
+	    dropCurrent: number;
+	    dropNeeded: number;
+	    minutesLeft: number;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new QueueItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.channel = this.convertValues(source["channel"], models.Channel);
+	        this.gameName = source["gameName"];
+	        this.campaign = source["campaign"];
+	        this.drop = source["drop"];
+	        this.dropCurrent = source["dropCurrent"];
+	        this.dropNeeded = source["dropNeeded"];
+	        this.minutesLeft = source["minutesLeft"];
+	        this.reason = source["reason"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class AutoState {
+	    mode: string;
+	    paused: boolean;
+	    state: string;
+	    exploring: string;
+	    queue: QueueItem[];
+	    // Go type: time
+	    nextCheck: any;
+	    lastError: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AutoState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.mode = source["mode"];
+	        this.paused = source["paused"];
+	        this.state = source["state"];
+	        this.exploring = source["exploring"];
+	        this.queue = this.convertValues(source["queue"], QueueItem);
+	        this.nextCheck = this.convertValues(source["nextCheck"], null);
+	        this.lastError = source["lastError"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class LoginPrompt {
 	    userCode: string;
 	    verificationUri: string;
@@ -231,11 +320,15 @@ export namespace main {
 	        this.expiresIn = source["expiresIn"];
 	    }
 	}
+	
 	export class WatchState {
 	    state: string;
 	    channel: models.Channel;
 	    status: watcher.Status;
 	    session: gql.DropSession;
+	    reason: string;
+	    // Go type: time
+	    started: any;
 	    error: string;
 	
 	    static createFrom(source: any = {}) {
@@ -248,6 +341,8 @@ export namespace main {
 	        this.channel = this.convertValues(source["channel"], models.Channel);
 	        this.status = this.convertValues(source["status"], watcher.Status);
 	        this.session = this.convertValues(source["session"], gql.DropSession);
+	        this.reason = source["reason"];
+	        this.started = this.convertValues(source["started"], null);
 	        this.error = source["error"];
 	    }
 	

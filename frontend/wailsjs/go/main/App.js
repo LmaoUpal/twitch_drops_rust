@@ -6,6 +6,10 @@ export function CancelLogin() {
   return window['go']['main']['App']['CancelLogin']();
 }
 
+export function ClaimDrop(arg1) {
+  return window['go']['main']['App']['ClaimDrop'](arg1);
+}
+
 export function DefaultSettings() {
   return window['go']['main']['App']['DefaultSettings']();
 }
@@ -20,6 +24,10 @@ export function GetActivity() {
 
 export function GetAuthStatus() {
   return window['go']['main']['App']['GetAuthStatus']();
+}
+
+export function GetAutoState() {
+  return window['go']['main']['App']['GetAutoState']();
 }
 
 export function GetCampaigns() {
@@ -52,6 +60,14 @@ export function Restore() {
 
 export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
+}
+
+export function SetAutoMode(arg1) {
+  return window['go']['main']['App']['SetAutoMode'](arg1);
+}
+
+export function SetPaused(arg1) {
+  return window['go']['main']['App']['SetPaused'](arg1);
 }
 
 export function StartLogin() {

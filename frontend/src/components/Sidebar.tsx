@@ -1,7 +1,7 @@
 import {ChevronsUpDown, Gift, LayoutDashboard, LucideIcon, Package, Pickaxe, ScrollText, Settings} from 'lucide-react';
 import {Page, useStore} from '../store';
 import {campaignPhase, findDrop, isRust} from '../lib/derive';
-import {fmtMinutes} from '../lib/format';
+import {fmtCountdown, fmtMinutes, isSet} from '../lib/format';
 import {Avatar, Progress} from './ui';
 
 export const APP_VERSION = 'v0.4.0';
@@ -18,7 +18,7 @@ function NavItem({page, icon: Icon, label, count}: { page: Page; icon: LucideIco
 }
 
 function StatusCard() {
-    const {watch, snapshot} = useStore();
+    const {watch, snapshot, auto, now} = useStore();
     const campaigns = snapshot?.campaigns ?? [];
     const state = watch?.state ?? 'idle';
     const ch = watch?.channel;
@@ -26,10 +26,17 @@ function StatusCard() {
     const found = s?.dropId ? findDrop(campaigns, s.dropId) : null;
     const name = ch?.displayName || ch?.login || '';
 
-    let dot = '', title = 'Idle', detail = 'Not watching anything', foot = 'Pick a channel to start';
+    const isAuto = auto?.mode === 'auto';
+    let dot = '', title = 'Idle', detail = isAuto ? 'Nothing live with drops' : 'Not watching anything';
+    let foot = isAuto && isSet(auto.nextCheck)
+        ? `Next check in ${fmtCountdown(Date.parse(auto.nextCheck) - now).replace(/^00:/, '')}`
+        : 'Pick a channel to start';
+    if (isAuto && auto.paused) {
+        [title, detail, foot] = ['Paused', 'Auto mode is paused', 'Resume from the Dashboard'];
+    }
     if (state === 'watching' || state === 'starting') {
         dot = 'success';
-        title = state === 'starting' ? 'Starting…' : 'Mining';
+        title = state === 'starting' ? 'Starting…' : auto?.state === 'exploring' ? `Exploring ${auto.exploring}` : 'Mining';
         detail = found ? `${name} · ${found.drop.name}` : name;
         foot = s?.requiredMinutes
             ? `${s.currentMinutes} / ${s.requiredMinutes} min · ~${fmtMinutes(s.requiredMinutes - s.currentMinutes)} left`
@@ -51,7 +58,7 @@ function StatusCard() {
             <div className="status-head">
                 <span className={`dot ${dot}`}/>
                 {title}
-                <span className="status-mode">MANUAL</span>
+                <span className="status-mode">{isAuto ? 'AUTO' : 'MANUAL'}</span>
             </div>
             <div className="muted ellipsis" style={{fontSize: 12}}>{detail}</div>
             {(state === 'watching' || state === 'starting') && <Progress thin value={value} tone={value >= 100 ? 'success' : rust ? 'rust' : undefined}/>}

@@ -228,7 +228,7 @@ export default function Settings() {
                 <div className="settings-col">
                     <div className="card settings-card flush">
                         <h3>Behavior</h3>
-                        <SettingRow label="Auto-claim drops" help="Claim as soon as a drop is ready." soon>
+                        <SettingRow label="Auto-claim drops" help="Claim as soon as a drop is ready.">
                             <Toggle on={settings.autoClaim} onChange={v => set(c => { c.autoClaim = v; })}/>
                         </SettingRow>
                         <SettingRow label="Start with Windows" help="Launch minimized to the tray at sign-in." soon>

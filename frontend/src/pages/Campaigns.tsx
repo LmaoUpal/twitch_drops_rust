@@ -3,7 +3,7 @@ import {
     AudioLines, Bell, Calendar, CircleCheck, ExternalLink, Eye, Gamepad2, Gift, Hourglass, Link, Link2Off,
     Lock, PackageOpen, Plus, RefreshCw, Search, Timer,
 } from 'lucide-react';
-import {RefreshCampaigns, WatchChannel} from '../../wailsjs/go/main/App';
+import {ClaimDrop, RefreshCampaigns, WatchChannel} from '../../wailsjs/go/main/App';
 import {models} from '../../wailsjs/go/models';
 import {BrowserOpenURL} from '../../wailsjs/runtime/runtime';
 import {useStore} from '../store';
@@ -57,6 +57,9 @@ export function DropTile({c, d, now, current}: { c: models.Campaign; d: models.D
                     {right}
                 </div>
             </div>
+            {state === 'ready' && d.instanceId && (
+                <Button variant="success" size="sm" block icon={Gift} onClick={() => ClaimDrop(d.instanceId)}>Claim</Button>
+            )}
         </div>
     );
 }

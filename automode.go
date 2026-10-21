@@ -252,7 +252,7 @@ func (a *App) autoStep(ctx context.Context, run *autoRun) {
 	case d.Action == miner.Switch:
 		run.exploreGame = ""
 		a.autoWatch(run, d.Target.Channel.Login, d.Target.Reason, &lastErr)
-	case d.Action == miner.Idle && run.exploreGame != "" && now.Before(run.exploreUntil) && current != nil:
+	case d.Action == miner.Idle && run.exploreGame != "" && now.Before(run.exploreUntil) && current != nil && wanted(prefs, run.exploreGame):
 		// keep exploring
 	case d.Action == miner.Idle:
 		if run.exploreGame != "" {
@@ -377,6 +377,15 @@ func (r *autoRun) gameStreams(ctx context.Context, slug string, now time.Time) (
 	}
 	r.streams[slug] = cached[[]models.Channel]{streams, now}
 	return streams, nil
+}
+
+func wanted(prefs scheduler.Prefs, game string) bool {
+	for _, g := range prefs.Games {
+		if strings.EqualFold(g, game) {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *autoRun) withoutSkipped(live []models.Channel, now time.Time) []models.Channel {

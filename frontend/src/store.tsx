@@ -1,5 +1,5 @@
 import {createContext, ReactNode, useContext, useEffect, useRef, useState} from 'react';
-import {GetActivity, GetAuthStatus, GetCampaigns, GetSettings, GetWatchState, SaveSettings} from "../wailsjs/go/main/App";
+import {GetActivity, GetAuthStatus, GetAutoState, GetCampaigns, GetSettings, GetWatchState, SaveSettings} from "../wailsjs/go/main/App";
 import {activity, catalog, config, main} from "../wailsjs/go/models";
 import {EventsOn} from "../wailsjs/runtime/runtime";
 
@@ -9,6 +9,7 @@ interface Store {
     auth: main.AuthStatus;
     snapshot: catalog.Snapshot | null;
     watch: main.WatchState | null;
+    auto: main.AutoState | null;
     settings: config.Config | null;
     activity: activity.Entry[];
     now: number;
@@ -40,6 +41,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
     const [auth, setAuth] = useState<main.AuthStatus>({state: 'checking', login: '', displayName: '', avatarUrl: '', error: ''});
     const [snapshot, setSnapshot] = useState<catalog.Snapshot | null>(null);
     const [watch, setWatch] = useState<main.WatchState | null>(null);
+    const [auto, setAuto] = useState<main.AutoState | null>(null);
     const [settings, setSettings] = useState<config.Config | null>(null);
     const [log, setLog] = useState<activity.Entry[]>([]);
     const [page, setPage] = useState<Page>('dashboard');
@@ -51,12 +53,14 @@ export function StoreProvider({children}: { children: ReactNode }) {
         GetAuthStatus().then(setAuth);
         GetCampaigns().then(setSnapshot);
         GetWatchState().then(setWatch);
+        GetAutoState().then(setAuto);
         GetSettings().then(setSettings);
         GetActivity().then(e => setLog(e ?? []));
         const offs = [
             EventsOn('auth:status', setAuth),
             EventsOn('campaigns:update', setSnapshot),
             EventsOn('watch:status', setWatch),
+            EventsOn('auto:status', setAuto),
             EventsOn('activity:entry', (e: activity.Entry) => setLog(l => [...l.slice(-999), e])),
         ];
         return () => offs.forEach(off => off());
@@ -77,7 +81,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
     }
 
     return (
-        <Ctx.Provider value={{auth, snapshot, watch, settings, activity: log, now, page, setPage, updateSettings, settingsError}}>
+        <Ctx.Provider value={{auth, snapshot, watch, auto, settings, activity: log, now, page, setPage, updateSettings, settingsError}}>
             {children}
         </Ctx.Provider>
     );

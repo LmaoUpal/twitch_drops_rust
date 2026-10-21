@@ -7,6 +7,8 @@ import {catalog} from '../models';
 
 export function CancelLogin():Promise<void>;
 
+export function ClaimDrop(arg1:string):Promise<void>;
+
 export function DefaultSettings():Promise<config.Config>;
 
 export function ExportActivity():Promise<string>;
@@ -14,6 +16,8 @@ export function ExportActivity():Promise<string>;
 export function GetActivity():Promise<Array<activity.Entry>>;
 
 export function GetAuthStatus():Promise<main.AuthStatus>;
+
+export function GetAutoState():Promise<main.AutoState>;
 
 export function GetCampaigns():Promise<catalog.Snapshot>;
 
@@ -30,6 +34,10 @@ export function RefreshCampaigns():Promise<void>;
 export function Restore():Promise<void>;
 
 export function SaveSettings(arg1:config.Config):Promise<void>;
+
+export function SetAutoMode(arg1:boolean):Promise<void>;
+
+export function SetPaused(arg1:boolean):Promise<void>;
 
 export function StartLogin():Promise<main.LoginPrompt>;
 
