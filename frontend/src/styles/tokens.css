@@ -1,0 +1,74 @@
+/* Design tokens from the Twitch_drops.pen design (Design Tokens frame). */
+:root,
+[data-theme="dark"] {
+    --surface-0: #0F0F12;
+    --surface-1: #16161A;
+    --surface-2: #1D1D22;
+    --surface-3: #26262D;
+    --surface-raised: #2C2C34;
+    --border: #25252B;
+    --border-strong: #35353D;
+    --text-primary: #EDEDF0;
+    --text-secondary: #A1A1AB;
+    --text-tertiary: #6E6E79;
+    --accent: #9146FF;
+    --accent-hover: #A266FF;
+    --accent-pressed: #7B33E8;
+    --accent-subtle: #9146FF24;
+    --accent-text: #BB94FF;
+    --rust: #CD412B;
+    --rust-subtle: #CD412B26;
+    --rust-text: #F2785F;
+    --success: #22C55E;
+    --success-subtle: #22C55E1F;
+    --success-text: #4ADE80;
+    --warning: #F59E0B;
+    --warning-subtle: #F59E0B1F;
+    --warning-text: #FBBF24;
+    --error: #EF4444;
+    --error-subtle: #EF44441F;
+    --error-text: #F87171;
+    --live: #EB0400;
+    --on-accent: #FFFFFF;
+    --overlay: #00000099;
+
+    --font-sans: "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    color-scheme: dark;
+}
+
+[data-theme="light"] {
+    --surface-0: #F5F5F7;
+    --surface-1: #FFFFFF;
+    --surface-2: #F0F0F3;
+    --surface-3: #E7E7EC;
+    --surface-raised: #FFFFFF;
+    --border: #E4E4E9;
+    --border-strong: #CDCDD5;
+    --text-primary: #16161A;
+    --text-secondary: #5A5A66;
+    --text-tertiary: #8C8C97;
+    --accent-hover: #7F35F0;
+    --accent-pressed: #6C26D9;
+    --accent-subtle: #9146FF14;
+    --accent-text: #7230E0;
+    --rust-subtle: #CD412B14;
+    --rust-text: #B2331E;
+    --success-subtle: #22C55E17;
+    --success-text: #15803D;
+    --warning-subtle: #F59E0B1A;
+    --warning-text: #B45309;
+    --error-subtle: #EF444414;
+    --error-text: #C42121;
+    --overlay: #16161A40;
+    color-scheme: light;
+}

@@ -6,6 +6,18 @@ export function CancelLogin() {
   return window['go']['main']['App']['CancelLogin']();
 }
 
+export function DefaultSettings() {
+  return window['go']['main']['App']['DefaultSettings']();
+}
+
+export function ExportActivity() {
+  return window['go']['main']['App']['ExportActivity']();
+}
+
+export function GetActivity() {
+  return window['go']['main']['App']['GetActivity']();
+}
+
 export function GetAuthStatus() {
   return window['go']['main']['App']['GetAuthStatus']();
 }
@@ -14,8 +26,8 @@ export function GetCampaigns() {
   return window['go']['main']['App']['GetCampaigns']();
 }
 
-export function GetConfig() {
-  return window['go']['main']['App']['GetConfig']();
+export function GetSettings() {
+  return window['go']['main']['App']['GetSettings']();
 }
 
 export function GetWatchState() {
@@ -26,6 +38,10 @@ export function Logout() {
   return window['go']['main']['App']['Logout']();
 }
 
+export function OpenConfigFolder() {
+  return window['go']['main']['App']['OpenConfigFolder']();
+}
+
 export function RefreshCampaigns() {
   return window['go']['main']['App']['RefreshCampaigns']();
 }
@@ -34,8 +50,8 @@ export function Restore() {
   return window['go']['main']['App']['Restore']();
 }
 
-export function SetGames(arg1) {
-  return window['go']['main']['App']['SetGames'](arg1);
+export function SaveSettings(arg1) {
+  return window['go']['main']['App']['SaveSettings'](arg1);
 }
 
 export function StartLogin() {

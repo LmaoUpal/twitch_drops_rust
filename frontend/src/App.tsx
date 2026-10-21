@@ -1,52 +1,44 @@
-import {useEffect, useState} from 'react';
-import './App.css';
-import {GetAuthStatus, GetConfig, Logout} from "../wailsjs/go/main/App";
-import {config, main} from "../wailsjs/go/models";
-import {EventsOn} from "../wailsjs/runtime/runtime";
-import Login from "./components/Login";
-import Campaigns from "./components/Campaigns";
-import Watching from "./components/Watching";
+import {Pickaxe} from 'lucide-react';
+import {StoreProvider, useStore} from './store';
+import {Sidebar} from './components/Sidebar';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Campaigns from './pages/Campaigns';
+import Inventory from './pages/Inventory';
+import Settings from './pages/Settings';
+import Activity from './pages/Activity';
 
-function App() {
-    const [cfg, setCfg] = useState<config.Config | null>(null);
-    const [auth, setAuth] = useState<main.AuthStatus>({state: 'checking', login: '', error: ''});
+function Shell() {
+    const {auth, page} = useStore();
 
-    useEffect(() => {
-        GetConfig().then(setCfg);
-        GetAuthStatus().then(setAuth);
-        return EventsOn('auth:status', setAuth);
-    }, []);
+    if (auth.state === 'checking') {
+        return (
+            <div className="login-screen">
+                <div className="login-logo"><Pickaxe size={28}/></div>
+                <p className="muted" style={{marginTop: 16}}>Checking saved login…</p>
+            </div>
+        );
+    }
+    if (auth.state !== 'loggedIn') return <Login/>;
 
     return (
-        <div id="App">
-            <header>
-                <h1>Twitch Drops Miner</h1>
-                {auth.state === 'loggedIn' ? (
-                    <span className="status">
-                        {auth.login} <button className="btn secondary small" onClick={() => Logout()}>Log out</button>
-                    </span>
-                ) : (
-                    <span className="status">{auth.state === 'checking' ? 'checking login…' : 'not logged in'}</span>
-                )}
-            </header>
-            <main>
-                {auth.state === 'checking' && <p className="muted">Checking saved login…</p>}
-                {(auth.state === 'loggedOut' || auth.state === 'offline') && <Login status={auth}/>}
-                {auth.state === 'loggedIn' && (
-                    <>
-                        <section>
-                            <h2>Games (priority)</h2>
-                            <ol>
-                                {cfg?.games?.map(g => <li key={g}>{g}</li>)}
-                            </ol>
-                        </section>
-                        <Watching/>
-                        <Campaigns/>
-                    </>
-                )}
+        <div className="shell">
+            <Sidebar/>
+            <main className="main">
+                {page === 'dashboard' && <Dashboard/>}
+                {page === 'campaigns' && <Campaigns/>}
+                {page === 'inventory' && <Inventory/>}
+                {page === 'activity' && <Activity/>}
+                {page === 'settings' && <Settings/>}
             </main>
         </div>
-    )
+    );
 }
 
-export default App
+export default function App() {
+    return (
+        <StoreProvider>
+            <Shell/>
+        </StoreProvider>
+    );
+}
