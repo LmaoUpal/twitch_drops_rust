@@ -1,13 +1,13 @@
 import {useMemo, useState} from 'react';
 import {
     AudioLines, Bell, BellRing, Calendar, CircleCheck, ExternalLink, Eye, Gamepad2, Gift, Hourglass, Link, Link2Off,
-    Lock, PackageOpen, Plus, RefreshCw, Search, Timer,
+    Lock, PackageOpen, Plus, RefreshCw, Search, Star, Timer,
 } from 'lucide-react';
 import {ClaimDrop, RefreshCampaigns, WatchChannel} from '../../wailsjs/go/main/App';
 import {models} from '../../wailsjs/go/models';
 import {BrowserOpenURL} from '../../wailsjs/runtime/runtime';
 import {useStore} from '../store';
-import {campaignPhase, coverImage, dropState, DropState, isRust, parentCampaignId, Phase} from '../lib/derive';
+import {campaignPhase, coverImage, dropState, DropState, isRust, parentCampaignId, Phase, setStreamerQueue, streamerQueue} from '../lib/derive';
 import {fmtCountdown, fmtDuration, fmtHM, fmtMinutes, fmtRange, fmtViewers, isSet, pct} from '../lib/format';
 import {Avatar, Badge, Banner, Button, Chip, Empty, GameIcon, Progress, Thumb, Select} from '../components/ui';
 import {Key, t, tn} from '../i18n';
@@ -65,6 +65,20 @@ export function DropTile({c, d, now, current}: { c: models.Campaign; d: models.D
     );
 }
 
+/** Adds a streamer to (or removes it from) the game's streamer queue used by auto mode. */
+function QueueButton({game, login}: { game: string; login: string }) {
+    const {settings, updateSettings} = useStore();
+    const queue = streamerQueue(settings, game);
+    const l = login.toLowerCase();
+    const pos = queue.indexOf(l);
+    if (pos >= 0) {
+        return <Button variant="ghost" size="sm" icon={Star} className="queued" title={t('camp.queueRemove')}
+                       onClick={() => updateSettings(c => setStreamerQueue(c, game, queue.filter(x => x !== l)))}>#{pos + 1}</Button>;
+    }
+    return <Button variant="ghost" size="sm" icon={Star} title={t('camp.queueAddTitle')}
+                   onClick={() => updateSettings(c => setStreamerQueue(c, game, [...queue, l]))}>{t('camp.queueAdd')}</Button>;
+}
+
 function StreamerSection({c, now, watchingLogin}: { c: models.Campaign; now: number; watchingLogin?: string }) {
     const names = c.allowedChannels.map(ch => ch.displayName || ch.login).join(', ');
     const active = campaignPhase(c, now) === 'active';
@@ -86,6 +100,7 @@ function StreamerSection({c, now, watchingLogin}: { c: models.Campaign; now: num
                                     {ch.online ? `${t('camp.liveViewers', {n: fmtViewers(ch.viewers)})}${ch.gameName ? ` · ${ch.gameName}` : ''}` : t('camp.offline')}
                                 </span>
                             </div>
+                            <QueueButton game={c.game.name} login={ch.login}/>
                             {watching
                                 ? <Button variant="primary" size="sm" icon={AudioLines}>{t('common.watching')}</Button>
                                 : <Button size="sm" icon={Eye} disabled={!ch.online || !active}

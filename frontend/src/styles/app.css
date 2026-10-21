@@ -855,3 +855,14 @@ a {
 
 .select-menu button:hover { background: var(--surface-3); }
 .select-menu button.selected { color: var(--accent-text); }
+
+.queue-btn { display: inline-flex; gap: 3px; padding: 2px 5px; font-size: 11px; font-family: var(--font-mono); }
+.queue-btn.on { color: var(--accent-text); background: var(--surface-3); }
+.queue-editor { display: flex; flex-direction: column; gap: 8px; margin: 0 0 4px 30px; padding: 8px 0 8px 12px; border-left: 2px solid var(--border-strong); }
+.tag-chip.dragging { border-color: var(--accent); }
+.tag-chip .idx { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); }
+.tag-chip[draggable] { cursor: grab; }
+button.tag-chip.suggest { cursor: pointer; color: var(--text-secondary); border-style: dashed; padding: 0 10px 0 8px; font-family: inherit; }
+button.tag-chip.suggest:hover { color: var(--text-primary); border-color: var(--accent); }
+.btn.queued { color: var(--accent-text); }
+.btn.queued svg { fill: currentColor; }

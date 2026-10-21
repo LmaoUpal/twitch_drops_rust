@@ -1,4 +1,4 @@
-import {models} from "../../wailsjs/go/models";
+import {config, models} from "../../wailsjs/go/models";
 
 export type Phase = 'upcoming' | 'active' | 'completed' | 'ended';
 export type DropState = 'claimed' | 'ready' | 'progress' | 'locked' | 'unlinked';
@@ -79,4 +79,19 @@ export function upNext(campaigns: models.Campaign[], now: number, currentLogin?:
         }
     }
     return items.sort((a, b) => Number(!!a.skipped) - Number(!!b.skipped));
+}
+
+/** The user's streamer queue for a game: logins watched first, in order (game matched case-insensitively). */
+export function streamerQueue(settings: config.Config | null, game: string): string[] {
+    const queues = settings?.preferredChannels ?? {};
+    const key = Object.keys(queues).find(k => k.toLowerCase() === game.toLowerCase());
+    return key ? queues[key] ?? [] : [];
+}
+
+/** Replaces the streamer queue of a game inside a settings draft. */
+export function setStreamerQueue(c: config.Config, game: string, queue: string[]) {
+    const queues = {...(c.preferredChannels ?? {})};
+    for (const k of Object.keys(queues)) if (k.toLowerCase() === game.toLowerCase()) delete queues[k];
+    if (queue.length) queues[game] = queue;
+    c.preferredChannels = queues;
 }

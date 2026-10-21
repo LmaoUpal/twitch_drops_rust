@@ -1,9 +1,9 @@
-import {useEffect, useState} from 'react';
-import {AtSign, ChevronDown, ChevronRight, FolderOpen, GripVertical, KeyRound, LogOut, Pencil, Plus, RotateCcw, Timer, X} from 'lucide-react';
+import {Fragment, useEffect, useState} from 'react';
+import {AtSign, ChevronDown, ChevronRight, FolderOpen, GripVertical, KeyRound, LogOut, Pencil, Plus, RotateCcw, Timer, Users, X} from 'lucide-react';
 import {DefaultSettings, Logout, OpenConfigFolder} from '../../wailsjs/go/main/App';
 import {config} from '../../wailsjs/go/models';
 import {useStore} from '../store';
-import {campaignPhase} from '../lib/derive';
+import {campaignPhase, setStreamerQueue, streamerQueue} from '../lib/derive';
 import {t, tn} from '../i18n';
 import {Avatar, Badge, Button, GameIcon, Segmented, Soon, Toggle} from '../components/ui';
 
@@ -11,6 +11,7 @@ function GamesPriority() {
     const {settings, updateSettings, snapshot, now} = useStore();
     const [drag, setDrag] = useState<number | null>(null);
     const [adding, setAdding] = useState('');
+    const [queueOpen, setQueueOpen] = useState<string | null>(null);
     const games = settings?.games ?? [];
     const campaigns = snapshot?.campaigns ?? [];
 
@@ -40,7 +41,8 @@ function GamesPriority() {
                     const mine = campaigns.filter(c => c.game.name.toLowerCase() === g.toLowerCase() && campaignPhase(c, now) !== 'ended');
                     const unlinked = mine.some(c => !c.accountLinked);
                     return (
-                        <div key={g} className={`game-row ${drag === i ? 'dragging' : ''}`} draggable
+                        <Fragment key={g}>
+                        <div className={`game-row ${drag === i ? 'dragging' : ''}`} draggable
                              onDragStart={() => setDrag(i)} onDragEnd={() => setDrag(null)}
                              onDragOver={e => { e.preventDefault(); if (drag !== null && drag !== i) { move(drag, i); setDrag(i); } }}>
                             <GripVertical size={14} className="grip"/>
@@ -52,8 +54,14 @@ function GamesPriority() {
                                     {mine.length ? `${tn('set.campaignsN', mine.length)}${unlinked ? t('set.notLinked') : ''}` : t('set.noCampaigns')}
                                 </span>
                             </div>
+                            <button className={`icon-btn queue-btn ${queueOpen === g ? 'on' : ''}`} title={t('set.queue')}
+                                    onClick={() => setQueueOpen(queueOpen === g ? null : g)}>
+                                <Users size={14}/>{streamerQueue(settings, g).length > 0 && <span>{streamerQueue(settings, g).length}</span>}
+                            </button>
                             <button className="icon-btn" title={t('set.remove')} onClick={() => updateSettings(c => { c.games.splice(i, 1); })}><X size={14}/></button>
                         </div>
+                        {queueOpen === g && <StreamerQueue game={g}/>}
+                        </Fragment>
                     );
                 })}
                 <label className="input" style={{height: 34}}>
@@ -62,6 +70,65 @@ function GamesPriority() {
                            onChange={e => setAdding(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()}/>
                 </label>
             </div>
+        </div>
+    );
+}
+
+/** Streamers of one game watched first, in order; drops streams of anyone else when none of them is live. */
+function StreamerQueue({game}: { game: string }) {
+    const {settings, updateSettings, snapshot, now} = useStore();
+    const [name, setName] = useState('');
+    const [drag, setDrag] = useState<number | null>(null);
+    const queue = streamerQueue(settings, game);
+    const save = (q: string[]) => updateSettings(c => setStreamerQueue(c, game, q));
+
+    // Streamers with their own drops in this game's running or upcoming campaigns.
+    const suggestions = [...new Set((snapshot?.campaigns ?? [])
+        .filter(c => c.game.name.toLowerCase() === game.toLowerCase() && campaignPhase(c, now) !== 'ended')
+        .flatMap(c => (c.allowedChannels ?? []).map(ch => ch.login.toLowerCase())))]
+        .filter(l => l && !queue.includes(l))
+        .slice(0, 12);
+
+    function add(login: string) {
+        const l = login.trim().replace(/^@/, '').toLowerCase();
+        if (l && !queue.includes(l)) save([...queue, l]);
+        setName('');
+    }
+
+    function move(from: number, to: number) {
+        const q = [...queue];
+        const [l] = q.splice(from, 1);
+        q.splice(to, 0, l);
+        save(q);
+    }
+
+    return (
+        <div className="queue-editor">
+            <div className="setting-help">{queue.length ? t('set.queueHelp') : t('set.queueEmpty')}</div>
+            {queue.length > 0 && (
+                <div className="chip-list">
+                    {queue.map((l, i) => (
+                        <span key={l} className={`tag-chip ${drag === i ? 'dragging' : ''}`} draggable
+                              onDragStart={() => setDrag(i)} onDragEnd={() => setDrag(null)}
+                              onDragOver={e => { e.preventDefault(); if (drag !== null && drag !== i) { move(drag, i); setDrag(i); } }}>
+                            <span className="idx">{i + 1}</span>{l}
+                            <button className="icon-btn" title={t('set.remove')} onClick={() => save(queue.filter(x => x !== l))}><X size={12}/></button>
+                        </span>
+                    ))}
+                </div>
+            )}
+            <div className="inline-form">
+                <label className="input grow" style={{height: 30}}>
+                    <AtSign size={14}/>
+                    <input placeholder={t('set.channelName')} value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && add(name)}/>
+                </label>
+                <Button icon={Plus} onClick={() => add(name)}>{t('set.queueAdd')}</Button>
+            </div>
+            {suggestions.length > 0 && (
+                <div className="chip-list">
+                    {suggestions.map(l => <button key={l} className="tag-chip suggest" onClick={() => add(l)}><Plus size={12}/>{l}</button>)}
+                </div>
+            )}
         </div>
     );
 }

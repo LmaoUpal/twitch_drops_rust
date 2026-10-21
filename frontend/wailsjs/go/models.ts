@@ -123,6 +123,7 @@ export namespace config {
 	export class Config {
 	    games: string[];
 	    excludedChannels: string[];
+	    preferredChannels: Record<string, Array<string>>;
 	    autoMode: boolean;
 	    autoClaim: boolean;
 	    startWithWindows: boolean;
@@ -140,6 +141,7 @@ export namespace config {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.games = source["games"];
 	        this.excludedChannels = source["excludedChannels"];
+	        this.preferredChannels = source["preferredChannels"];
 	        this.autoMode = source["autoMode"];
 	        this.autoClaim = source["autoClaim"];
 	        this.startWithWindows = source["startWithWindows"];
