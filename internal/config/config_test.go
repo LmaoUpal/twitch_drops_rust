@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -48,5 +49,29 @@ func TestLoadKeepsDefaultHashesForMissingOps(t *testing.T) {
 	}
 	if cfg.Twitch.Hashes["ViewerDropsDashboard"] == "" {
 		t.Fatal("default hash for unlisted op missing")
+	}
+}
+
+func TestSaveOmitsDefaultTwitchConstants(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	cfg := Default()
+	cfg.Twitch.Hashes["Inventory"] = "custom"
+	if err := Save(path, cfg); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(data)
+	if strings.Contains(s, Default().Twitch.ClientID) || strings.Contains(s, Default().Twitch.Hashes["ViewerDropsDashboard"]) {
+		t.Fatalf("defaults persisted:\n%s", s)
+	}
+	got, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Twitch.Hashes["Inventory"] != "custom" || got.Twitch.ClientID != Default().Twitch.ClientID || got.Twitch.Hashes["ViewerDropsDashboard"] == "" {
+		t.Fatalf("reload lost data: %+v", got.Twitch)
 	}
 }

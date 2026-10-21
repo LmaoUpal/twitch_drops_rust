@@ -166,7 +166,8 @@ type inventoryCampaign struct {
 		RequiredMinutesWatched int       `json:"requiredMinutesWatched"`
 		BenefitEdges           []struct {
 			Benefit struct {
-				Name string `json:"name"`
+				Name          string `json:"name"`
+				ImageAssetURL string `json:"imageAssetURL"`
 			} `json:"benefit"`
 		} `json:"benefitEdges"`
 		Self *struct {
@@ -182,6 +183,7 @@ func (ic inventoryCampaign) model() models.Campaign {
 		ID: ic.ID, Name: ic.Name, Game: ic.Game.model(),
 		StartAt: ic.StartAt, EndAt: ic.EndAt, LinkURL: ic.AccountLinkURL,
 		AccountLinked: ic.Self == nil || ic.Self.IsAccountConnected,
+		Source:        "twitch",
 	}
 	if ic.Allow != nil && ic.Allow.IsEnabled && len(ic.Allow.Channels) > 0 {
 		c.AllowedChannels = []models.Channel{}
@@ -196,6 +198,9 @@ func (ic inventoryCampaign) model() models.Campaign {
 		}
 		for _, b := range d.BenefitEdges {
 			drop.Benefits = append(drop.Benefits, b.Benefit.Name)
+			if drop.ImageURL == "" {
+				drop.ImageURL = b.Benefit.ImageAssetURL
+			}
 		}
 		if d.Self != nil {
 			drop.CurrentMinutes = d.Self.CurrentMinutesWatched

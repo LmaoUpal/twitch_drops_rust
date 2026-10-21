@@ -1,7 +1,10 @@
 // Package models holds the domain types shared by the Twitch client, scheduler and miner.
 package models
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 type Game struct {
 	ID   string `json:"id"`
@@ -27,6 +30,7 @@ type Drop struct {
 	CurrentMinutes  int       `json:"currentMinutes"`
 	Claimed         bool      `json:"claimed"`
 	InstanceID      string    `json:"instanceId"` // set by Twitch once the drop can be claimed
+	ImageURL        string    `json:"imageUrl"`
 	StartAt         time.Time `json:"startAt"`
 	EndAt           time.Time `json:"endAt"`
 }
@@ -44,6 +48,9 @@ type Campaign struct {
 	EndAt         time.Time `json:"endAt"`
 	AccountLinked bool      `json:"accountLinked"`
 	LinkURL       string    `json:"linkUrl"`
+	// Source is "twitch" for campaigns from the Twitch inventory, "facepunch" for the Rust schedule
+	// (no progress or real Twitch IDs until the campaign shows up in the inventory).
+	Source string `json:"source"`
 	// AllowedChannels restricts progress to these channels; nil means any channel playing Game.
 	AllowedChannels []Channel `json:"allowedChannels"`
 	Drops           []Drop    `json:"drops"`
@@ -74,7 +81,11 @@ func (c Campaign) Allows(ch Channel) bool {
 		return true
 	}
 	for _, a := range c.AllowedChannels {
-		if a.ID == ch.ID {
+		if a.ID != "" && a.ID == ch.ID {
+			return true
+		}
+		// Facepunch only gives logins.
+		if a.ID == "" && a.Login != "" && strings.EqualFold(a.Login, ch.Login) {
 			return true
 		}
 	}

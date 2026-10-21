@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/pelletier/go-toml/v2"
 )
@@ -20,19 +21,19 @@ type Config struct {
 	ExcludedChannels []string `toml:"excluded_channels" json:"excludedChannels"` // logins never to watch
 	AutoClaim        bool     `toml:"auto_claim" json:"autoClaim"`
 	// DeviceID is sent as X-Device-Id; generated once on first launch.
-	DeviceID string `toml:"device_id" json:"-"`
+	DeviceID string `toml:"device_id,omitempty" json:"-"`
 	Twitch   Twitch `toml:"twitch" json:"twitch"`
 }
 
 type Twitch struct {
-	ClientID  string `toml:"client_id" json:"clientId"`
-	UserAgent string `toml:"user_agent" json:"userAgent"`
+	ClientID  string `toml:"client_id,omitempty" json:"clientId"`
+	UserAgent string `toml:"user_agent,omitempty" json:"userAgent"`
 	// ClientURL is the web origin of the client app, sent as Origin/Referer.
-	ClientURL string `toml:"client_url" json:"clientUrl"`
+	ClientURL string `toml:"client_url,omitempty" json:"clientUrl"`
 	// Scopes requested during device login.
-	Scopes []string `toml:"scopes" json:"scopes"`
+	Scopes []string `toml:"scopes,omitempty" json:"scopes"`
 	// Hashes maps GQL operation name to its persisted-query sha256 hash.
-	Hashes map[string]string `toml:"hashes" json:"hashes"`
+	Hashes map[string]string `toml:"hashes,omitempty" json:"hashes"`
 }
 
 // Default returns the settings used on first launch.
@@ -100,7 +101,10 @@ func Load(path string) (Config, error) {
 	return cfg, nil
 }
 
+// Save writes cfg to path. Twitch constants equal to the built-in defaults are left out,
+// so updated defaults in a new app version take effect; only user overrides persist.
 func Save(path string, cfg Config) error {
+	cfg.Twitch = overrides(cfg.Twitch, Default().Twitch)
 	data, err := toml.Marshal(cfg)
 	if err != nil {
 		return err
@@ -109,4 +113,29 @@ func Save(path string, cfg Config) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o644)
+}
+
+func overrides(t, def Twitch) Twitch {
+	out := Twitch{Hashes: map[string]string{}}
+	if t.ClientID != def.ClientID {
+		out.ClientID = t.ClientID
+	}
+	if t.UserAgent != def.UserAgent {
+		out.UserAgent = t.UserAgent
+	}
+	if t.ClientURL != def.ClientURL {
+		out.ClientURL = t.ClientURL
+	}
+	if !slices.Equal(t.Scopes, def.Scopes) {
+		out.Scopes = t.Scopes
+	}
+	for op, h := range t.Hashes {
+		if def.Hashes[op] != h {
+			out.Hashes[op] = h
+		}
+	}
+	if len(out.Hashes) == 0 {
+		out.Hashes = nil
+	}
+	return out
 }
