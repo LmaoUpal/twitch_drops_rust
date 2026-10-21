@@ -1,21 +1,28 @@
+import {lang, locale, t} from '../i18n';
+
 const ZERO_TIME = '0001-01-01T00:00:00Z';
 
 export function isSet(t?: string) {
     return !!t && t !== ZERO_TIME && !t.startsWith('0001-');
 }
 
+/** Number with unit: "5m" in English, "5 мин" in Russian. */
+function unit(n: number | string, u: 'unit.h' | 'unit.m' | 'unit.d') {
+    return lang() === 'ru' ? `${n} ${t(u)}` : `${n}${t(u)}`;
+}
+
 export function fmtMinutes(m: number) {
     const h = Math.floor(m / 60), min = Math.round(m % 60);
-    if (!h) return `${min}m`;
-    return min ? `${h}h ${String(min).padStart(2, '0')}m` : `${h}h`;
+    if (!h) return unit(min, 'unit.m');
+    return min ? `${unit(h, 'unit.h')} ${unit(String(min).padStart(2, '0'), 'unit.m')}` : unit(h, 'unit.h');
 }
 
 export function fmtDuration(ms: number) {
     const min = Math.max(0, Math.round(ms / 60000));
     const d = Math.floor(min / 1440), h = Math.floor((min % 1440) / 60), m = min % 60;
-    if (d) return h ? `${d}d ${h}h` : `${d}d`;
-    if (h) return m ? `${h}h ${m}m` : `${h}h`;
-    return `${m}m`;
+    if (d) return h ? `${unit(d, 'unit.d')} ${unit(h, 'unit.h')}` : unit(d, 'unit.d');
+    if (h) return m ? `${unit(h, 'unit.h')} ${unit(m, 'unit.m')}` : unit(h, 'unit.h');
+    return unit(m, 'unit.m');
 }
 
 export function fmtCountdown(ms: number) {
@@ -24,37 +31,51 @@ export function fmtCountdown(ms: number) {
     const hh = String(Math.floor(rest / 3600)).padStart(2, '0');
     const mm = String(Math.floor((rest % 3600) / 60)).padStart(2, '0');
     const ss = String(rest % 60).padStart(2, '0');
-    return d ? `${d}d ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
+    return d ? `${d}${t('unit.d')} ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`;
 }
 
-const monthDay = new Intl.DateTimeFormat('en-US', {month: 'short', day: 'numeric'});
-const timeFmt = new Intl.DateTimeFormat('en-GB', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
-const hmFmt = new Intl.DateTimeFormat('en-GB', {hour: '2-digit', minute: '2-digit'});
+// Intl formatters are costly to build; keep one per locale and pattern.
+const cache = new Map<string, Intl.DateTimeFormat>();
 
-export function fmtDay(t: string | Date) {
-    return monthDay.format(new Date(t));
+function dtf(name: string, opts: Intl.DateTimeFormatOptions) {
+    const key = `${locale()}|${name}`;
+    let f = cache.get(key);
+    if (!f) {
+        f = new Intl.DateTimeFormat(locale(), opts);
+        cache.set(key, f);
+    }
+    return f;
+}
+
+export function fmtDay(v: string | Date) {
+    return dtf('day', {month: 'short', day: 'numeric'}).format(new Date(v));
 }
 
 export function fmtRange(start: string, end: string) {
     return `${fmtDay(start)} – ${fmtDay(end)}`;
 }
 
-export function fmtTime(t: string | Date) {
-    return timeFmt.format(new Date(t));
+export function fmtTime(v: string | Date) {
+    return dtf('time', {hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false}).format(new Date(v));
 }
 
-export function fmtHM(t: string | Date) {
-    return hmFmt.format(new Date(t));
+export function fmtHM(v: string | Date) {
+    return dtf('hm', {hour: '2-digit', minute: '2-digit', hour12: false}).format(new Date(v));
+}
+
+export function fmtMonth(v: Date) {
+    const s = dtf('month', {month: 'long', year: 'numeric'}).format(v);
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export function fmtWeekday(v: Date) {
+    return dtf('weekday', {weekday: 'long', month: 'short', day: 'numeric'}).format(v);
 }
 
 export function fmtViewers(n: number) {
-    return n.toLocaleString('en-US');
+    return n.toLocaleString(locale());
 }
 
 export function pct(cur: number, req: number) {
     return req ? Math.min(100, Math.round(100 * cur / req)) : 0;
-}
-
-export function plural(n: number, word: string) {
-    return `${n} ${word}${n === 1 ? '' : 's'}`;
 }

@@ -36,6 +36,9 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	if cfg.Twitch.Hashes == nil {
 		cfg.Twitch.Hashes = map[string]string{}
 	}
+	if _, ok := messages[cfg.Language]; !ok {
+		cfg.Language = "en"
+	}
 
 	a.mu.Lock()
 	autostartChanged := cfg.StartWithWindows != a.cfg.StartWithWindows
@@ -50,6 +53,7 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	cfg.DeviceID = a.cfg.DeviceID
 	cfg.AutoMode = a.cfg.AutoMode // owned by SetAutoMode; the UI copy may be stale
 	gamesChanged := !slices.Equal(cfg.Games, a.cfg.Games)
+	langChanged := cfg.Language != a.cfg.Language
 	a.cfg = cfg
 	path := a.cfgPath
 	a.mu.Unlock()
@@ -58,6 +62,9 @@ func (a *App) SaveSettings(cfg config.Config) error {
 		if err := config.Save(path, cfg); err != nil {
 			return err
 		}
+	}
+	if langChanged {
+		a.updateTray()
 	}
 	if gamesChanged {
 		slog.Info("Game priority updated: "+strings.Join(cfg.Games, ", "), "tag", "Settings")

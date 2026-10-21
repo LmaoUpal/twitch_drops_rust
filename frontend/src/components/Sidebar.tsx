@@ -3,6 +3,7 @@ import {Page, useStore} from '../store';
 import {campaignPhase, findDrop, isRust} from '../lib/derive';
 import {fmtCountdown, fmtMinutes, isSet} from '../lib/format';
 import {Avatar, Progress} from './ui';
+import {t} from '../i18n';
 
 export const APP_VERSION = 'v0.4.0';
 
@@ -27,28 +28,28 @@ function StatusCard() {
     const name = ch?.displayName || ch?.login || '';
 
     const isAuto = auto?.mode === 'auto';
-    let dot = '', title = 'Idle', detail = isAuto ? 'Nothing live with drops' : 'Not watching anything';
+    let dot = '', title = t('status.idle'), detail = isAuto ? t('status.nothingLive') : t('status.notWatching');
     let foot = isAuto && isSet(auto.nextCheck)
-        ? `Next check in ${fmtCountdown(Date.parse(auto.nextCheck) - now).replace(/^00:/, '')}`
-        : 'Pick a channel to start';
+        ? t('status.nextCheck', {t: fmtCountdown(Date.parse(auto.nextCheck) - now).replace(/^00:/, '')})
+        : t('status.pickChannel');
     if (isAuto && auto.paused) {
-        [title, detail, foot] = ['Paused', 'Auto mode is paused', 'Resume from the Dashboard'];
+        [title, detail, foot] = [t('status.paused'), t('status.pausedDetail'), t('status.resumeHint')];
     }
     if (state === 'watching' || state === 'starting') {
         dot = 'success';
-        title = state === 'starting' ? 'Starting…' : auto?.state === 'exploring' ? `Exploring ${auto.exploring}` : 'Mining';
+        title = state === 'starting' ? t('status.starting') : auto?.state === 'exploring' ? t('status.exploring', {game: auto.exploring}) : t('status.mining');
         detail = found ? `${name} · ${found.drop.name}` : name;
         foot = s?.requiredMinutes
-            ? `${s.currentMinutes} / ${s.requiredMinutes} min · ~${fmtMinutes(s.requiredMinutes - s.currentMinutes)} left`
-            : 'waiting for drop progress';
+            ? t('status.progress', {cur: s.currentMinutes, req: s.requiredMinutes, left: fmtMinutes(s.requiredMinutes - s.currentMinutes)})
+            : t('status.waiting');
     } else if (state === 'offline') {
         dot = 'warning';
-        title = 'Channel offline';
-        detail = `${name} went offline`;
+        title = t('status.offline');
+        detail = t('status.wentOffline', {name});
     } else if (state === 'error') {
         dot = 'error';
-        title = 'Stopped';
-        detail = watch?.error || 'Watching failed';
+        title = t('status.stopped');
+        detail = watch?.error || t('status.failed');
     }
     const value = s?.requiredMinutes ? (100 * s.currentMinutes) / s.requiredMinutes : 0;
     const rust = found ? isRust(found.campaign.game) : isRust({id: ch?.gameId ?? '', name: ch?.gameName ?? '', slug: ''});
@@ -58,7 +59,7 @@ function StatusCard() {
             <div className="status-head">
                 <span className={`dot ${dot}`}/>
                 {title}
-                <span className="status-mode">{isAuto ? 'AUTO' : 'MANUAL'}</span>
+                <span className="status-mode">{isAuto ? t('status.auto') : t('status.manual')}</span>
             </div>
             <div className="muted ellipsis" style={{fontSize: 12}}>{detail}</div>
             {(state === 'watching' || state === 'starting') && <Progress thin value={value} tone={value >= 100 ? 'success' : rust ? 'rust' : undefined}/>}
@@ -76,16 +77,16 @@ export function Sidebar() {
                 <div className="brand-mark"><Pickaxe size={16}/></div>
                 <div>
                     <div className="brand-name">Drops Miner</div>
-                    <div className="brand-version">{APP_VERSION} · for Twitch</div>
+                    <div className="brand-version">{t('nav.forTwitch', {v: APP_VERSION})}</div>
                 </div>
             </div>
-            <NavItem page="dashboard" icon={LayoutDashboard} label="Dashboard"/>
-            <NavItem page="campaigns" icon={Gift} label="Campaigns" count={activeCount}/>
-            <NavItem page="inventory" icon={Package} label="Inventory"/>
-            <NavItem page="activity" icon={ScrollText} label="Activity log"/>
+            <NavItem page="dashboard" icon={LayoutDashboard} label={t('nav.dashboard')}/>
+            <NavItem page="campaigns" icon={Gift} label={t('nav.campaigns')} count={activeCount}/>
+            <NavItem page="inventory" icon={Package} label={t('nav.inventory')}/>
+            <NavItem page="activity" icon={ScrollText} label={t('nav.activity')}/>
             <div className="grow"/>
             <StatusCard/>
-            <NavItem page="settings" icon={Settings} label="Settings"/>
+            <NavItem page="settings" icon={Settings} label={t('nav.settings')}/>
             <div className="account">
                 <Avatar src={auth.avatarUrl} name={auth.login} size={24}/>
                 <span className="grow ellipsis">{auth.displayName || auth.login}</span>

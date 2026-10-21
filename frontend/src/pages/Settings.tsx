@@ -4,7 +4,7 @@ import {DefaultSettings, Logout, OpenConfigFolder} from '../../wailsjs/go/main/A
 import {config} from '../../wailsjs/go/models';
 import {useStore} from '../store';
 import {campaignPhase} from '../lib/derive';
-import {plural} from '../lib/format';
+import {t, tn} from '../i18n';
 import {Avatar, Badge, Button, GameIcon, Segmented, Soon, Toggle} from '../components/ui';
 
 function GamesPriority() {
@@ -32,8 +32,8 @@ function GamesPriority() {
     return (
         <div className="card settings-card">
             <div>
-                <h3>Games priority</h3>
-                <div className="setting-help">Drag to reorder. Games higher in the list are watched first.</div>
+                <h3>{t('set.games')}</h3>
+                <div className="setting-help">{t('set.gamesHelp')}</div>
             </div>
             <div className="col" style={{gap: 6}}>
                 {games.map((g, i) => {
@@ -49,16 +49,16 @@ function GamesPriority() {
                             <div className="grow col">
                                 <span style={{fontWeight: 500}}>{g}</span>
                                 <span style={{fontSize: 11, color: mine.length ? (unlinked ? 'var(--error-text)' : 'var(--success-text)') : 'var(--text-tertiary)'}}>
-                                    {mine.length ? `${plural(mine.length, 'campaign')}${unlinked ? ' · not linked' : ''}` : 'no known campaigns'}
+                                    {mine.length ? `${tn('set.campaignsN', mine.length)}${unlinked ? t('set.notLinked') : ''}` : t('set.noCampaigns')}
                                 </span>
                             </div>
-                            <button className="icon-btn" title="Remove" onClick={() => updateSettings(c => { c.games.splice(i, 1); })}><X size={14}/></button>
+                            <button className="icon-btn" title={t('set.remove')} onClick={() => updateSettings(c => { c.games.splice(i, 1); })}><X size={14}/></button>
                         </div>
                     );
                 })}
                 <label className="input" style={{height: 34}}>
                     <Plus size={14}/>
-                    <input placeholder="Add a game — exact Twitch category name" value={adding}
+                    <input placeholder={t('set.addGame')} value={adding}
                            onChange={e => setAdding(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()}/>
                 </label>
             </div>
@@ -78,8 +78,8 @@ function ExcludedChannels() {
     return (
         <div className="card settings-card">
             <div>
-                <h3>Excluded channels</h3>
-                <div className="setting-help">Never watch these, even if they carry drops.</div>
+                <h3>{t('set.excluded')}</h3>
+                <div className="setting-help">{t('set.excludedHelp')}</div>
             </div>
             {list.length > 0 && (
                 <div className="chip-list">
@@ -93,9 +93,9 @@ function ExcludedChannels() {
             <div className="inline-form">
                 <label className="input grow">
                     <AtSign size={14}/>
-                    <input placeholder="channel name" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()}/>
+                    <input placeholder={t('set.channelName')} value={name} onChange={e => setName(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()}/>
                 </label>
-                <Button icon={Plus} onClick={add}>Exclude</Button>
+                <Button icon={Plus} onClick={add}>{t('set.exclude')}</Button>
             </div>
         </div>
     );
@@ -133,27 +133,27 @@ function Advanced() {
             <div className="setting-row" style={{cursor: 'pointer'}} onClick={() => setOpen(v => !v)}>
                 {open ? <ChevronDown size={16} className="faint"/> : <ChevronRight size={16} className="faint"/>}
                 <div className="grow">
-                    <div className="setting-label" style={{fontWeight: 600}}>Advanced</div>
-                    {!open && <div className="setting-help">Client ID, GQL hash overrides, refresh interval</div>}
+                    <div className="setting-label" style={{fontWeight: 600}}>{t('set.advanced')}</div>
+                    {!open && <div className="setting-help">{t('set.advancedHelp')}</div>}
                 </div>
-                {open && <Badge tone="warning" dot>for troubleshooting</Badge>}
+                {open && <Badge tone="warning" dot>{t('set.troubleshooting')}</Badge>}
             </div>
             {open && (
                 <div className="col" style={{gap: 14, padding: '4px 16px 16px', borderTop: '1px solid var(--border)'}}>
                     <div className="col" style={{gap: 6, paddingTop: 12}}>
-                        <div className="row"><span className="grow" style={{fontWeight: 600}}>Twitch client ID</span>
-                            <span className="faint" style={{fontSize: 11}}>{defaults && settings.twitch.clientId === defaults.twitch.clientId ? 'Android TV app · default' : 'custom'}</span></div>
+                        <div className="row"><span className="grow" style={{fontWeight: 600}}>{t('set.clientId')}</span>
+                            <span className="faint" style={{fontSize: 11}}>{defaults && settings.twitch.clientId === defaults.twitch.clientId ? t('set.clientDefault') : t('set.custom')}</span></div>
                         <label className="input mono">
                             <KeyRound size={14}/>
                             <input className="mono" value={settings.twitch.clientId} onChange={e => updateSettings(c => { c.twitch.clientId = e.target.value; })}/>
                         </label>
-                        <span className="faint" style={{fontSize: 11}}>Takes effect after restarting the app.</span>
+                        <span className="faint" style={{fontSize: 11}}>{t('set.restartNote')}</span>
                     </div>
                     <div className="col" style={{gap: 6}}>
-                        <div className="row"><span className="grow" style={{fontWeight: 600}}>GQL hash overrides</span>
-                            <span className="faint" style={{fontSize: 11}}>{plural(overrides, 'override')} active</span></div>
+                        <div className="row"><span className="grow" style={{fontWeight: 600}}>{t('set.hashes')}</span>
+                            <span className="faint" style={{fontSize: 11}}>{tn('set.overridesN', overrides)}</span></div>
                         <div className="hash-table">
-                            <div className="hrow"><span>Operation</span><span>sha256Hash</span><span/></div>
+                            <div className="hrow"><span>{t('set.operation')}</span><span>sha256Hash</span><span/></div>
                             {ops.map(op => (
                                 <div key={op} className={`hrow ${isOverride(op) ? 'override' : ''}`}>
                                     <span className="ellipsis" title={op}>{op}</span>
@@ -162,33 +162,33 @@ function Advanced() {
                                                  onKeyDown={e => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}/>
                                         : <span className="hval faint" title={hashes[op]}>{short(hashes[op])}</span>}
                                     {isOverride(op) && defaults?.twitch.hashes[op]
-                                        ? <button className="icon-btn" title="Reset to default" onClick={() => updateSettings(c => { c.twitch.hashes[op] = defaults!.twitch.hashes[op]; })}><RotateCcw size={12}/></button>
-                                        : <button className="icon-btn" title="Edit" onClick={() => setEditing(op)}><Pencil size={12}/></button>}
+                                        ? <button className="icon-btn" title={t('set.resetDefault')} onClick={() => updateSettings(c => { c.twitch.hashes[op] = defaults!.twitch.hashes[op]; })}><RotateCcw size={12}/></button>
+                                        : <button className="icon-btn" title={t('set.edit')} onClick={() => setEditing(op)}><Pencil size={12}/></button>}
                                 </div>
                             ))}
                         </div>
                         <div className="inline-form">
-                            <input className="input mono grow" style={{fontSize: 11}} placeholder="Operation" value={newOp.op} onChange={e => setNewOp({...newOp, op: e.target.value})}/>
+                            <input className="input mono grow" style={{fontSize: 11}} placeholder={t('set.operation')} value={newOp.op} onChange={e => setNewOp({...newOp, op: e.target.value})}/>
                             <input className="input mono grow" style={{fontSize: 11}} placeholder="sha256Hash" value={newOp.hash} onChange={e => setNewOp({...newOp, hash: e.target.value})}/>
                             <Button variant="ghost" icon={Plus} disabled={!newOp.op || !newOp.hash}
-                                    onClick={() => { updateSettings(c => { c.twitch.hashes[newOp.op.trim()] = newOp.hash.trim(); }); setNewOp({op: '', hash: ''}); }}>Add override</Button>
+                                    onClick={() => { updateSettings(c => { c.twitch.hashes[newOp.op.trim()] = newOp.hash.trim(); }); setNewOp({op: '', hash: ''}); }}>{t('set.addOverride')}</Button>
                         </div>
                     </div>
                     <div className="col" style={{gap: 6}}>
-                        <div className="row"><span className="grow" style={{fontWeight: 600}}>Refresh interval</span><span className="faint" style={{fontSize: 11}}>min 30 s</span></div>
+                        <div className="row"><span className="grow" style={{fontWeight: 600}}>{t('set.refresh')}</span><span className="faint" style={{fontSize: 11}}>{t('set.min30')}</span></div>
                         <div className="row">
                             <label className="input" style={{width: 96}}>
                                 <Timer size={14}/>
                                 <input type="number" min={30} value={settings.refreshSeconds}
                                        onChange={e => updateSettings(c => { c.refreshSeconds = Math.max(30, Number(e.target.value) || 30); })}/>
                             </label>
-                            <span className="muted" style={{fontSize: 12}}>seconds between campaign & inventory syncs</span>
+                            <span className="muted" style={{fontSize: 12}}>{t('set.refreshHelp')}</span>
                         </div>
                     </div>
                     <div className="row" style={{borderTop: '1px solid var(--border)', paddingTop: 14, justifyContent: 'space-between'}}>
                         <Button variant="danger" icon={RotateCcw} disabled={!defaults}
-                                onClick={() => updateSettings(c => { c.twitch = defaults!.twitch; c.refreshSeconds = defaults!.refreshSeconds; })}>Reset to defaults</Button>
-                        <Button variant="ghost" icon={FolderOpen} onClick={() => OpenConfigFolder()}>Open config folder</Button>
+                                onClick={() => updateSettings(c => { c.twitch = defaults!.twitch; c.refreshSeconds = defaults!.refreshSeconds; })}>{t('set.reset')}</Button>
+                        <Button variant="ghost" icon={FolderOpen} onClick={() => OpenConfigFolder()}>{t('set.openFolder')}</Button>
                     </div>
                 </div>
             )}
@@ -205,21 +205,21 @@ export default function Settings() {
         <>
             <div className="page-header">
                 <div className="grow">
-                    <h1 className="page-title">Settings</h1>
-                    <div className="page-subtitle">{settingsError ? <span style={{color: 'var(--error-text)'}}>{settingsError}</span> : 'Changes save automatically.'}</div>
+                    <h1 className="page-title">{t('set.title')}</h1>
+                    <div className="page-subtitle">{settingsError ? <span style={{color: 'var(--error-text)'}}>{settingsError}</span> : t('set.autosave')}</div>
                 </div>
             </div>
             <div className="settings-cols">
                 <div className="settings-col">
                     <div className="card settings-card">
-                        <h3>Account</h3>
+                        <h3>{t('set.account')}</h3>
                         <div className="row" style={{gap: 12}}>
                             <Avatar src={auth.avatarUrl} name={auth.login} size={40}/>
                             <div className="grow col" style={{gap: 2}}>
                                 <span style={{fontSize: 14, fontWeight: 600}}>{auth.displayName || auth.login}</span>
-                                <span className="muted" style={{fontSize: 12}}>Earning drops on this account</span>
+                                <span className="muted" style={{fontSize: 12}}>{t('set.earning')}</span>
                             </div>
-                            <Button variant="danger" icon={LogOut} onClick={() => Logout()}>Log out</Button>
+                            <Button variant="danger" icon={LogOut} onClick={() => Logout()}>{t('set.logout')}</Button>
                         </div>
                     </div>
                     <GamesPriority/>
@@ -227,35 +227,35 @@ export default function Settings() {
                 </div>
                 <div className="settings-col">
                     <div className="card settings-card flush">
-                        <h3>Behavior</h3>
-                        <SettingRow label="Auto-claim drops" help="Claim as soon as a drop is ready.">
+                        <h3>{t('set.behavior')}</h3>
+                        <SettingRow label={t('set.autoClaim')} help={t('set.autoClaimHelp')}>
                             <Toggle on={settings.autoClaim} onChange={v => set(c => { c.autoClaim = v; })}/>
                         </SettingRow>
-                        <SettingRow label="Start with Windows" help="Launch minimized to the tray at sign-in.">
+                        <SettingRow label={t('set.startWin')} help={t('set.startWinHelp')}>
                             <Toggle on={settings.startWithWindows} onChange={v => set(c => { c.startWithWindows = v; })}/>
                         </SettingRow>
-                        <SettingRow label="Minimize to tray on close" help="The × button hides the window; mining continues.">
+                        <SettingRow label={t('set.tray')} help={t('set.trayHelp')}>
                             <Toggle on={settings.minimizeToTray} onChange={v => set(c => { c.minimizeToTray = v; })}/>
                         </SettingRow>
                     </div>
                     <div className="card settings-card flush">
-                        <h3>Desktop notifications</h3>
-                        <SettingRow label="Drop claimed">
+                        <h3>{t('set.notifications')}</h3>
+                        <SettingRow label={t('set.nClaimed')}>
                             <Toggle on={settings.notify.dropClaimed} onChange={v => set(c => { c.notify.dropClaimed = v; })}/>
                         </SettingRow>
-                        <SettingRow label="Campaign started">
+                        <SettingRow label={t('set.nStarted')}>
                             <Toggle on={settings.notify.campaignStarted} onChange={v => set(c => { c.notify.campaignStarted = v; })}/>
                         </SettingRow>
-                        <SettingRow label="Account not linked">
+                        <SettingRow label={t('set.nUnlinked')}>
                             <Toggle on={settings.notify.accountNotLinked} onChange={v => set(c => { c.notify.accountNotLinked = v; })}/>
                         </SettingRow>
                     </div>
                     <div className="card settings-card">
-                        <h3>Language</h3>
+                        <h3>{t('set.language')}</h3>
                         <div>
                             <Segmented value={settings.language || 'en'} onChange={v => set(c => { c.language = v; })} options={[
                                 {value: 'en', label: 'English'},
-                                {value: 'ru', label: 'Русский', disabled: true, title: 'Russian arrives in a later update'},
+                                {value: 'ru', label: 'Русский'},
                             ]}/>
                         </div>
                     </div>

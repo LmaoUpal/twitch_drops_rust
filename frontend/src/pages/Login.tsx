@@ -6,6 +6,7 @@ import {BrowserOpenURL, ClipboardSetText} from '../../wailsjs/runtime/runtime';
 import {useStore} from '../store';
 import {fmtCountdown} from '../lib/format';
 import {Button, TwitchIcon} from '../components/ui';
+import {t} from '../i18n';
 
 function formatCode(code: string) {
     return code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
@@ -52,64 +53,64 @@ export default function Login() {
     if (prompt) {
         card = (
             <>
-                <h1>Authorize this device</h1>
-                <p>Open twitch.tv/activate on any device signed in to the account that should earn drops, and enter this code:</p>
+                <h1>{t('login.authorize')}</h1>
+                <p>{t('login.enterCode')}</p>
                 <div className={`code-box ${expired ? 'expired' : ''}`}>
                     {formatCode(prompt.userCode)}
-                    <Button size="sm" icon={Copy} title="Copy code" onClick={() => ClipboardSetText(prompt.userCode)}/>
+                    <Button size="sm" icon={Copy} title={t('login.copyCode')} onClick={() => ClipboardSetText(prompt.userCode)}/>
                 </div>
                 {expired ? (
                     <>
                         <div className="status-line error">
                             <CircleX size={16}/>
-                            <span className="grow">Code expired before it was approved</span>
+                            <span className="grow">{t('login.expired')}</span>
                             <span className="mono" style={{fontSize: 12, color: 'var(--error-text)'}}>00:00</span>
                         </div>
-                        <Button variant="primary" size="lg" block icon={RefreshCw} disabled={busy} onClick={start}>Get a new code</Button>
+                        <Button variant="primary" size="lg" block icon={RefreshCw} disabled={busy} onClick={start}>{t('login.newCode')}</Button>
                     </>
                 ) : (
                     <>
-                        <Button variant="primary" size="lg" block icon={ExternalLink} onClick={() => BrowserOpenURL(prompt.verificationUri)}>Open twitch.tv/activate</Button>
+                        <Button variant="primary" size="lg" block icon={ExternalLink} onClick={() => BrowserOpenURL(prompt.verificationUri)}>{t('login.open')}</Button>
                         {error ? (
                             <div className="status-line error"><CircleX size={16}/><span className="grow">{error}</span></div>
                         ) : (
                             <div className="status-line">
                                 <LoaderCircle size={16} className="spin" color="var(--accent-text)"/>
-                                <span className="grow">Waiting for approval…</span>
-                                <span className="mono faint" style={{fontSize: 12}}>expires in {fmtCountdown(expiresAt - now).replace(/^00:/, '')}</span>
+                                <span className="grow">{t('login.waiting')}</span>
+                                <span className="mono faint" style={{fontSize: 12}}>{t('login.expiresIn', {t: fmtCountdown(expiresAt - now).replace(/^00:/, '')})}</span>
                             </div>
                         )}
                     </>
                 )}
-                <button className="link-btn" onClick={cancel}>Cancel</button>
+                <button className="link-btn" onClick={cancel}>{t('common.cancel')}</button>
             </>
         );
     } else {
         card = (
             <>
-                <h1>Twitch Drops Miner</h1>
-                <p>Sign in with the Twitch account that should earn drops. Streams are watched in the background — no video, minimal bandwidth.</p>
+                <h1>{t('login.title')}</h1>
+                <p>{t('login.intro')}</p>
                 {(error || auth.state === 'offline') && (
                     <div className="status-line error" style={{alignItems: 'flex-start', padding: 14}}>
                         {unreachable ? <WifiOff size={16}/> : <CircleX size={16}/>}
                         <div className="grow">
-                            <div style={{fontWeight: 600}}>{unreachable ? "Can't reach Twitch" : 'Login failed'}</div>
-                            <div className="muted" style={{fontSize: 12, marginTop: 2}}>{error || auth.error || 'Check your connection, VPN or proxy.'}</div>
+                            <div style={{fontWeight: 600}}>{unreachable ? t('login.cantReach') : t('login.failed')}</div>
+                            <div className="muted" style={{fontSize: 12, marginTop: 2}}>{error || auth.error || t('login.checkConn')}</div>
                         </div>
                     </div>
                 )}
                 {auth.state === 'offline' ? (
-                    <Button variant="primary" size="lg" block icon={RefreshCw} onClick={() => Restore()}>Retry</Button>
+                    <Button variant="primary" size="lg" block icon={RefreshCw} onClick={() => Restore()}>{t('common.retry')}</Button>
                 ) : (
                     <Button variant="primary" size="lg" block disabled={busy} onClick={start}>
                         {busy ? <LoaderCircle size={16} className="spin"/> : <TwitchIcon/>}
-                        {error ? 'Retry' : 'Log in with Twitch'}
+                        {error ? t('common.retry') : t('login.login')}
                     </Button>
                 )}
                 {error || auth.state === 'offline' ? (
-                    <button className="link-btn" onClick={() => ClipboardSetText(error || auth.error)}><Clipboard size={14}/>Copy error details</button>
+                    <button className="link-btn" onClick={() => ClipboardSetText(error || auth.error)}><Clipboard size={14}/>{t('login.copyErr')}</button>
                 ) : (
-                    <span className="row faint" style={{fontSize: 12, gap: 6}}><Lock size={12}/>Uses Twitch device login — your password never touches this app</span>
+                    <span className="row faint" style={{fontSize: 12, gap: 6}}><Lock size={12}/>{t('login.password')}</span>
                 )}
             </>
         );
@@ -121,7 +122,7 @@ export default function Login() {
                 <div className="login-logo"><Pickaxe size={28}/></div>
                 {card}
             </div>
-            <div className="login-footnote"><ShieldAlert size={13}/>Automating watch time may violate Twitch's Terms of Service. Use at your own risk.</div>
+            <div className="login-footnote"><ShieldAlert size={13}/>{t('login.tos')}</div>
         </div>
     );
 }

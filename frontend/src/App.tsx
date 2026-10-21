@@ -1,6 +1,7 @@
 import {Pickaxe} from 'lucide-react';
 import {StoreProvider, useStore} from './store';
 import {Sidebar} from './components/Sidebar';
+import {t} from './i18n';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Campaigns from './pages/Campaigns';
@@ -15,7 +16,7 @@ function Shell() {
         return (
             <div className="login-screen">
                 <div className="login-logo"><Pickaxe size={28}/></div>
-                <p className="muted" style={{marginTop: 16}}>Checking saved login…</p>
+                <p className="muted" style={{marginTop: 16}}>{t('login.checking')}</p>
             </div>
         );
     }

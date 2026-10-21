@@ -10,6 +10,7 @@ import {useStore} from '../store';
 import {campaignPhase, findDrop, isRust, parentCampaignId, upNext} from '../lib/derive';
 import {fmtCountdown, fmtDuration, fmtHM, fmtMinutes, fmtTime, fmtViewers, isSet, pct} from '../lib/format';
 import {Avatar, Badge, Banner, Button, Progress, Ring, Segmented, Thumb} from '../components/ui';
+import {t, tn, tReason} from '../i18n';
 
 function WatchForm({onDone, autoFocus}: { onDone?(): void; autoFocus?: boolean }) {
     const [login, setLogin] = useState('');
@@ -28,13 +29,13 @@ function WatchForm({onDone, autoFocus}: { onDone?(): void; autoFocus?: boolean }
             <div className="inline-form">
                 <label className="input" style={{width: 220}}>
                     <User size={14}/>
-                    <input autoFocus={autoFocus} placeholder="channel login" value={login}
+                    <input autoFocus={autoFocus} placeholder={t('dash.channelLogin')} value={login}
                            onChange={e => setLogin(e.target.value)} onKeyDown={e => e.key === 'Enter' && login && go()}/>
                 </label>
-                <Button variant="primary" icon={Eye} disabled={!login} onClick={go}>Watch</Button>
+                <Button variant="primary" icon={Eye} disabled={!login} onClick={go}>{t('common.watch')}</Button>
                 {onDone && <Button variant="ghost" icon={X} onClick={onDone}/>}
             </div>
-            <span className="faint" style={{fontSize: 11}}>Picking a channel yourself switches to Manual mode.</span>
+            <span className="faint" style={{fontSize: 11}}>{t('dash.manualHint')}</span>
             {error && <span style={{color: 'var(--error-text)', fontSize: 12}}>{error}</span>}
         </div>
     );
@@ -50,12 +51,12 @@ function Header({title, subtitle}: { title: string; subtitle: string }) {
                 <div className="page-subtitle">{subtitle}</div>
             </div>
             <Segmented value={isAuto ? 'auto' : 'manual'} onChange={v => SetAutoMode(v === 'auto')} options={[
-                {value: 'auto', label: 'Auto', icon: Sparkles},
-                {value: 'manual', label: 'Manual', icon: Hand},
+                {value: 'auto', label: t('dash.auto'), icon: Sparkles},
+                {value: 'manual', label: t('dash.manual'), icon: Hand},
             ]}/>
             {isAuto && (auto.paused
-                ? <Button variant="primary" icon={Play} onClick={() => SetPaused(false)}>Resume</Button>
-                : <Button icon={Pause} onClick={() => SetPaused(true)}>Pause</Button>)}
+                ? <Button variant="primary" icon={Play} onClick={() => SetPaused(false)}>{t('common.resume')}</Button>
+                : <Button icon={Pause} onClick={() => SetPaused(true)}>{t('common.pause')}</Button>)}
         </div>
     );
 }
@@ -101,29 +102,29 @@ function Hero({watch, campaigns}: { watch: main.WatchState; campaigns: models.Ca
                 <div className="grow col" style={{gap: 5}}>
                     <div className="row" style={{gap: 10}}>
                         <span className="stream-name" style={offline ? {color: 'var(--text-secondary)'} : undefined}>{name}</span>
-                        {offline ? <Badge>OFFLINE</Badge> : <span className="badge live">LIVE</span>}
+                        {offline ? <Badge>{t('common.offline')}</Badge> : <span className="badge live">{t('common.live')}</span>}
                         {!offline && ch.viewers > 0 && (
                             <span className="row muted" style={{gap: 4, fontWeight: 500}}>
                                 <User size={13} color="var(--live)"/>{fmtViewers(ch.viewers)}
                             </span>
                         )}
-                        {offline && <span className="row muted" style={{gap: 4}}><WifiOff size={13}/>stream ended</span>}
+                        {offline && <span className="row muted" style={{gap: 4}}><WifiOff size={13}/>{t('dash.streamEnded')}</span>}
                     </div>
                     <div className="stream-title">
-                        {offline ? (autoRunning ? 'Channel went offline. Picking the next channel…' : 'Channel went offline. Pick another channel to keep earning.') : ch.title}
+                        {offline ? (autoRunning ? t('dash.offlineAuto') : t('dash.offlineManual')) : ch.title}
                     </div>
                     <div className="row" style={{gap: 6}}>
                         {ch.gameName && <Badge tone={rust ? 'rust' : 'accent'} dot>{ch.gameName}</Badge>}
-                        {exploring && <Badge tone="warning">Exploring</Badge>}
-                        {!exploring && watch.reason && <Badge tone={watch.reason === 'streamer drop' ? 'accent' : 'neutral'}>{watch.reason[0].toUpperCase() + watch.reason.slice(1)}</Badge>}
-                        {!watch.reason && <Badge>Manual pick</Badge>}
-                        {watchedFor && !offline && <span className="faint" style={{fontSize: 12}}>· watching for {watchedFor}</span>}
+                        {exploring && <Badge tone="warning">{t('dash.exploringBadge')}</Badge>}
+                        {!exploring && watch.reason && <Badge tone={watch.reason === 'streamer drop' ? 'accent' : 'neutral'}>{tReason(watch.reason)}</Badge>}
+                        {!watch.reason && <Badge>{t('dash.manualPick')}</Badge>}
+                        {watchedFor && !offline && <span className="faint" style={{fontSize: 12}}>{t('dash.watchingFor', {t: watchedFor})}</span>}
                     </div>
                 </div>
                 <div className="row">
-                    <Button icon={Square} onClick={() => StopWatching()} title={auto?.mode === 'auto' ? 'Stops and pauses auto mode' : undefined}>Stop</Button>
-                    <Button icon={ArrowLeftRight} onClick={() => setSwitching(v => !v)}>Switch channel</Button>
-                    <Button icon={ExternalLink} title="Open on Twitch" onClick={() => BrowserOpenURL(`https://www.twitch.tv/${ch.login}`)}/>
+                    <Button icon={Square} onClick={() => StopWatching()} title={auto?.mode === 'auto' ? t('dash.stopTitle') : undefined}>{t('common.stop')}</Button>
+                    <Button icon={ArrowLeftRight} onClick={() => setSwitching(v => !v)}>{t('dash.switch')}</Button>
+                    <Button icon={ExternalLink} title={t('dash.openTwitch')} onClick={() => BrowserOpenURL(`https://www.twitch.tv/${ch.login}`)}/>
                 </div>
             </div>
             {switching && (
@@ -135,10 +136,10 @@ function Hero({watch, campaigns}: { watch: main.WatchState; campaigns: models.Ca
                 <Ring value={s?.requiredMinutes ? pct(s.currentMinutes, s.requiredMinutes) : 0}
                       color={ready ? 'var(--success)' : rust ? 'var(--rust)' : 'var(--accent)'}>
                     <span className="ring-value">{s?.requiredMinutes ? s.currentMinutes : '–'}</span>
-                    <span className="ring-unit">{s?.requiredMinutes ? `of ${s.requiredMinutes} min` : 'no drop yet'}</span>
+                    <span className="ring-unit">{s?.requiredMinutes ? t('dash.ofMin', {n: s.requiredMinutes}) : t('dash.noDropYet')}</span>
                 </Ring>
                 <div className="grow col" style={{gap: 14}}>
-                    <span className="overline">{ready ? 'Current drop · complete' : 'Current drop'}</span>
+                    <span className="overline">{ready ? t('dash.currentDropDone') : t('dash.currentDrop')}</span>
                     {found ? (
                         <div className="row" style={{gap: 14}}>
                             <Thumb src={found.drop.imageUrl} size={56}/>
@@ -146,36 +147,36 @@ function Hero({watch, campaigns}: { watch: main.WatchState; campaigns: models.Ca
                                 <span className="drop-name">{found.drop.name}</span>
                                 <span className="muted" style={{fontSize: 12}}>
                                     {found.campaign.name}
-                                    {found.campaign.allowedChannels ? ` · only on ${found.campaign.allowedChannels.map(c => c.displayName || c.login).join(', ')}` : ''}
+                                    {found.campaign.allowedChannels ? t('dash.onlyOn', {names: found.campaign.allowedChannels.map(c => c.displayName || c.login).join(', ')}) : ''}
                                 </span>
                             </div>
                         </div>
                     ) : (
                         <span className="muted">
                             {exploring
-                                ? `No known ${exploring} campaign yet. If this stream carries drops, Twitch starts reporting progress within a few minutes.`
-                                : s?.requiredMinutes ? 'Twitch reports a drop for this channel; the campaign list catches up on the next refresh.' : 'Twitch reports drop progress a minute or two after watching starts.'}
+                                ? t('dash.exploringNoCampaign', {game: exploring})
+                                : s?.requiredMinutes ? t('dash.dropUnknown') : t('dash.dropSoon')}
                         </span>
                     )}
                     {s.requiredMinutes > 0 && (ready ? (
                         <div className="col" style={{gap: 10}}>
                             <div className="row" style={{color: 'var(--success-text)', fontWeight: 600}}>
-                                <Gift size={15}/> Ready to claim
-                                <span className="muted" style={{fontWeight: 400}}>{settings?.autoClaim ? '· auto-claim is on' : ''}</span>
+                                <Gift size={15}/> {t('dash.ready')}
+                                <span className="muted" style={{fontWeight: 400}}>{settings?.autoClaim ? t('dash.autoClaimIsOn') : ''}</span>
                             </div>
                             {instance ? (
                                 <div className="row" style={{gap: 12}}>
-                                    <Button variant="success" icon={Gift} onClick={claim}>Claim {found?.drop.name}</Button>
-                                    {settings?.autoClaim && <span className="muted">or let auto-claim do it</span>}
+                                    <Button variant="success" icon={Gift} onClick={claim}>{t('dash.claimDrop', {name: found?.drop.name ?? ''})}</Button>
+                                    {settings?.autoClaim && <span className="muted">{t('dash.orAutoClaim')}</span>}
                                 </div>
-                            ) : <span className="muted" style={{fontSize: 12}}>Waiting for Twitch to issue the claim — the inventory is being refreshed.</span>}
+                            ) : <span className="muted" style={{fontSize: 12}}>{t('dash.waitingClaim')}</span>}
                             {claimError && <span style={{color: 'var(--error-text)', fontSize: 12}}>{claimError}</span>}
                         </div>
                     ) : (
                         <div className="row">
                             <Hourglass size={15} className="muted"/>
-                            <span style={{fontSize: 14, fontWeight: 600}}>~{fmtMinutes(left)} left</span>
-                            <span className="muted">· ready ≈ {fmtHM(new Date(now + left * 60000))}{settings?.autoClaim ? ' · auto-claim on' : ''}</span>
+                            <span style={{fontSize: 14, fontWeight: 600}}>{t('dash.left', {t: fmtMinutes(left)})}</span>
+                            <span className="muted">{t('dash.readyAt', {time: fmtHM(new Date(now + left * 60000))})}{settings?.autoClaim ? t('dash.autoClaimOn') : ''}</span>
                         </div>
                     ))}
                 </div>
@@ -183,7 +184,7 @@ function Hero({watch, campaigns}: { watch: main.WatchState; campaigns: models.Ca
                     <>
                         <div className="vdivider"/>
                         <div className="col" style={{gap: 12, width: 236}}>
-                            <span className="overline">Also progressing</span>
+                            <span className="overline">{t('dash.also')}</span>
                             {also.map(d => (
                                 <div key={d.id} className="row" style={{gap: 10}}>
                                     <Thumb src={d.imageUrl} size={32}/>
@@ -201,12 +202,12 @@ function Hero({watch, campaigns}: { watch: main.WatchState; campaigns: models.Ca
                 )}
             </div>
             <div className="tech-stats">
-                <span><RadioTower size={12}/>segments requested {fmtViewers(st?.segments ?? 0)}</span>
-                <span><Send size={12}/>minute-watched sent {st?.spadeEvents ?? 0}</span>
-                {isSet(st?.lastPoll) && <span><RefreshCw size={12}/>updated {fmtTime(st.lastPoll)}</span>}
+                <span><RadioTower size={12}/>{t('dash.segments', {n: fmtViewers(st?.segments ?? 0)})}</span>
+                <span><Send size={12}/>{t('dash.spade', {n: st?.spadeEvents ?? 0})}</span>
+                {isSet(st?.lastPoll) && <span><RefreshCw size={12}/>{t('dash.updated', {t: fmtTime(st.lastPoll)})}</span>}
                 {autoRunning && isSet(auto!.nextCheck)
-                    ? <span><Timer size={12}/>next re-rank {fmtCountdown(Date.parse(auto!.nextCheck) - now).replace(/^00:/, '')}</span>
-                    : <span><Timer size={12}/>polling every 10 s</span>}
+                    ? <span><Timer size={12}/>{t('dash.nextRerank', {t: fmtCountdown(Date.parse(auto!.nextCheck) - now).replace(/^00:/, '')})}</span>
+                    : <span><Timer size={12}/>{t('dash.polling')}</span>}
             </div>
         </div>
     );
@@ -224,9 +225,9 @@ function QueueRow({index, channel, sub, reason, eta, skipped, onWatch}: {
                 <span style={{fontWeight: 600}}>{channel.displayName || channel.login}</span>
                 <span className="muted ellipsis" style={{fontSize: 12}}>{sub}</span>
             </div>
-            <Badge tone={tone}>{skipped ? 'skipped' : reason}</Badge>
+            <Badge tone={tone}>{skipped ? t('reason.skipped') : tReason(reason)}</Badge>
             {eta !== undefined && <span className="queue-eta">{eta}</span>}
-            {onWatch && <Button size="sm" icon={Eye} disabled={skipped} onClick={onWatch}>Watch</Button>}
+            {onWatch && <Button size="sm" icon={Eye} disabled={skipped} onClick={onWatch}>{t('common.watch')}</Button>}
         </div>
     );
 }
@@ -239,8 +240,8 @@ function UpNext({campaigns, current}: { campaigns: models.Campaign[]; current?: 
         return (
             <div className="col" style={{gap: 6}}>
                 <div className="row" style={{paddingBottom: 4}}>
-                    <span className="grow" style={{fontSize: 15, fontWeight: 600}}>Up next</span>
-                    <span className="faint" style={{fontSize: 12}}>Re-ranked every minute</span>
+                    <span className="grow" style={{fontSize: 15, fontWeight: 600}}>{t('dash.upNext')}</span>
+                    <span className="faint" style={{fontSize: 12}}>{t('dash.rerank')}</span>
                 </div>
                 {q.map((it, i) => (
                     <QueueRow key={it.channel.login} index={i + 1} channel={it.channel} reason={it.reason}
@@ -255,11 +256,11 @@ function UpNext({campaigns, current}: { campaigns: models.Campaign[]; current?: 
     return (
         <div className="col" style={{gap: 6}}>
             <div className="row" style={{paddingBottom: 4}}>
-                <span className="grow" style={{fontSize: 15, fontWeight: 600}}>Live streamer-drop channels</span>
+                <span className="grow" style={{fontSize: 15, fontWeight: 600}}>{t('dash.liveStreamers')}</span>
             </div>
             {items.map((it, i) => (
                 <QueueRow key={it.channel.login} index={i + 1} channel={it.channel} reason={it.reason} skipped={!!it.skipped}
-                          sub={`${it.campaign.game.name}${it.drop ? ` · ${it.drop.name} ${fmtMinutes(it.drop.currentMinutes)} / ${fmtMinutes(it.drop.requiredMinutes)}` : ''}${it.skipped ? ` · ${it.skipped}` : ''}`}
+                          sub={`${it.campaign.game.name}${it.drop ? ` · ${it.drop.name} ${fmtMinutes(it.drop.currentMinutes)} / ${fmtMinutes(it.drop.requiredMinutes)}` : ''}${it.skipped ? ` · ${t('reason.accountNotLinked')}` : ''}`}
                           onWatch={() => WatchChannel(it.channel.login)}/>
             ))}
         </div>
@@ -278,17 +279,17 @@ function Idle({campaigns}: { campaigns: models.Campaign[] }) {
     return (
         <div className="card empty" style={{minHeight: 0, padding: '48px 32px'}}>
             <div className="empty-orb"><div>{paused ? <Pause size={22}/> : <MoonStar size={22}/>}</div></div>
-            <h3>{paused ? 'Mining is paused' : isAuto ? 'No live channels have drops for your games' : 'Not watching anything'}</h3>
+            <h3>{paused ? t('dash.pausedTitle') : isAuto ? t('dash.noLive') : t('dash.notWatching')}</h3>
             <p>
-                {paused ? 'Resume to let auto mode pick a channel again.'
-                    : isAuto ? `Checked ${campaigns.length} campaigns${games.length ? ` across ${games.join(' and ')}` : ''}. We'll look again${nextCheck ? ` in ${nextCheck}` : ' shortly'} and start watching as soon as something goes live.`
-                        : 'Pick a live channel from the list below or from Campaigns, or type a channel login.'}
+                {paused ? t('dash.pausedText')
+                    : isAuto ? t('dash.checked', {campaigns: tn('dash.checkedCampaigns', campaigns.length), games: games.length ? t('dash.across', {games: games.join(t('dash.and'))}) : '', when: nextCheck ? t('dash.inTime', {t: nextCheck}) : t('dash.shortly')})
+                        : t('dash.manualIdle')}
             </p>
             <div className="row" style={{marginTop: 8}}>
                 {paused
-                    ? <Button variant="primary" icon={Play} onClick={() => SetPaused(false)}>Resume mining</Button>
-                    : <Button variant="primary" icon={Gift} onClick={() => setPage('campaigns')}>Browse campaigns</Button>}
-                {isAuto && !paused && <Button icon={RefreshCw} onClick={() => RefreshCampaigns()}>Check now</Button>}
+                    ? <Button variant="primary" icon={Play} onClick={() => SetPaused(false)}>{t('dash.resumeMining')}</Button>
+                    : <Button variant="primary" icon={Gift} onClick={() => setPage('campaigns')}>{t('dash.browse')}</Button>}
+                {isAuto && !paused && <Button icon={RefreshCw} onClick={() => RefreshCampaigns()}>{t('dash.checkNow')}</Button>}
             </div>
             {!isAuto && <div style={{marginTop: 12}}><WatchForm/></div>}
             {upcoming.length > 0 && (
@@ -300,7 +301,7 @@ function Idle({campaigns}: { campaigns: models.Campaign[] }) {
                                 <span style={{fontWeight: 500}} className="ellipsis">{c.name}</span>
                                 <span className="muted" style={{fontSize: 12}}>{c.game.name}</span>
                             </div>
-                            <Badge tone="warning" dot>starts in {fmtDuration(Date.parse(c.startAt) - now)}</Badge>
+                            <Badge tone="warning" dot>{t('dash.startsIn', {t: fmtDuration(Date.parse(c.startAt) - now)})}</Badge>
                         </div>
                     ))}
                 </div>
@@ -318,22 +319,22 @@ export default function Dashboard() {
     const isAuto = auto?.mode === 'auto';
     const exploring = auto?.state === 'exploring';
 
-    const title = watching ? (exploring ? `Exploring ${auto!.exploring}` : 'Now watching') : 'Nothing to watch';
+    const title = watching ? (exploring ? t('dash.exploringTitle', {game: auto!.exploring}) : t('dash.nowWatching')) : t('dash.nothing');
     const subtitle = isAuto
-        ? (auto!.paused ? 'Auto mode is paused.' : exploring ? 'No known campaign for this game yet — watching a drops stream to find out.' : 'Auto mode picks the channel that completes your drops soonest.')
-        : 'Manual mode: you choose the channel, the miner keeps it watched.';
+        ? (auto!.paused ? t('dash.subPaused') : exploring ? t('dash.subExploring') : t('dash.subAuto'))
+        : t('dash.subManual');
 
     return (
         <>
             {watch?.state === 'error' && dismissed !== watch.error && (
-                <Banner tone="error" icon={CircleX} title="Watching stopped" action={
+                <Banner tone="error" icon={CircleX} title={t('dash.watchStopped')} action={
                     <button className="icon-btn" onClick={() => setDismissed(watch.error)}><X size={14}/></button>}>
                     {watch.error}
                 </Banner>
             )}
             {warning && dismissed !== warning && (
-                <Banner icon={WifiOff} title="Some data is unavailable" action={<>
-                    <Button variant="ghost" size="sm" onClick={() => RefreshCampaigns()}>Retry now</Button>
+                <Banner icon={WifiOff} title={t('dash.someData')} action={<>
+                    <Button variant="ghost" size="sm" onClick={() => RefreshCampaigns()}>{t('dash.retryNow')}</Button>
                     <button className="icon-btn" onClick={() => setDismissed(warning)}><X size={14}/></button>
                 </>}>{warning}</Banner>
             )}

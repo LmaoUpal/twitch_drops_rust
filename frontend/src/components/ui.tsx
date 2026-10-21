@@ -1,6 +1,7 @@
 import {ReactNode} from 'react';
 import {Flame, Gamepad2, LucideIcon} from 'lucide-react';
 import {gameColor} from '../lib/derive';
+import {t} from '../i18n';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
 
@@ -27,7 +28,7 @@ export function Badge({tone = 'neutral', dot, children}: { tone?: Tone; dot?: bo
 }
 
 export function Soon() {
-    return <span className="badge soon" title="Arrives in a later update">soon</span>;
+    return <span className="badge soon" title={t('common.soonTitle')}>{t('common.soon')}</span>;
 }
 
 export function Toggle({on, onChange, disabled}: { on: boolean; onChange(v: boolean): void; disabled?: boolean }) {

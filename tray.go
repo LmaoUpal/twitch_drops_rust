@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"log/slog"
 	"sync"
 
@@ -19,6 +18,8 @@ type tray struct {
 	mu     sync.Mutex
 	status *systray.MenuItem
 	pause  *systray.MenuItem
+	open   *systray.MenuItem
+	quit   *systray.MenuItem
 }
 
 // startTray shows the tray icon. systray runs its own message loop, so it gets a goroutine.
@@ -29,17 +30,17 @@ func (a *App) startTray() {
 func (a *App) onTrayReady() {
 	systray.SetIcon(trayIcon)
 	systray.SetTooltip("Twitch Drops Miner")
-	status := systray.AddMenuItem("Starting…", "")
+	status := systray.AddMenuItem(a.tr("tray.starting"), "")
 	status.Disable()
 	systray.AddSeparator()
-	pause := systray.AddMenuItem("Pause mining", "")
-	open := systray.AddMenuItem("Open", "")
+	pause := systray.AddMenuItem(a.tr("tray.pause"), "")
+	open := systray.AddMenuItem(a.tr("tray.open"), "")
 	systray.AddSeparator()
-	quit := systray.AddMenuItem("Quit", "")
+	quit := systray.AddMenuItem(a.tr("tray.quit"), "")
 	systray.SetOnTapped(a.showWindow) // left click opens, right click shows the menu
 
 	a.tray.mu.Lock()
-	a.tray.status, a.tray.pause = status, pause
+	a.tray.status, a.tray.pause, a.tray.open, a.tray.quit = status, pause, open, quit
 	a.tray.mu.Unlock()
 	a.updateTray()
 
@@ -66,35 +67,37 @@ func (a *App) updateTray() {
 		return
 	}
 	w, auto := a.GetWatchState(), a.GetAutoState()
-	text := "Idle — nothing to watch"
+	a.tray.open.SetTitle(a.tr("tray.open"))
+	a.tray.quit.SetTitle(a.tr("tray.quit"))
+	text := a.tr("tray.idle")
 	switch {
 	case auto.Mode == modeAuto && auto.Paused:
-		text = "Paused"
+		text = a.tr("tray.paused")
 	case w.State == watchActive || w.State == watchStarting:
 		name := w.Channel.DisplayName
 		if name == "" {
 			name = w.Channel.Login
 		}
-		text = "Watching " + name
+		text = a.tr("tray.watching", name)
 		if s := w.Session; s.RequiredMinutes > 0 {
-			text += fmt.Sprintf(" — %d / %d min", s.CurrentMinutes, s.RequiredMinutes)
+			text += a.tr("tray.progress", s.CurrentMinutes, s.RequiredMinutes)
 		}
 	case w.State == watchOffline:
-		text = "Channel offline"
+		text = a.tr("tray.offline")
 	}
 	a.tray.status.SetTitle(text)
 	systray.SetTooltip("Twitch Drops Miner — " + text)
 
 	if auto.Mode != modeAuto {
-		a.tray.pause.SetTitle("Manual mode")
+		a.tray.pause.SetTitle(a.tr("tray.manual"))
 		a.tray.pause.Disable()
 		return
 	}
 	a.tray.pause.Enable()
 	if auto.Paused {
-		a.tray.pause.SetTitle("Resume mining")
+		a.tray.pause.SetTitle(a.tr("tray.resume"))
 	} else {
-		a.tray.pause.SetTitle("Pause mining")
+		a.tray.pause.SetTitle(a.tr("tray.pause"))
 	}
 }
 
@@ -123,7 +126,7 @@ func (a *App) beforeClose(ctx context.Context) bool {
 	runtime.WindowHide(ctx)
 	if first {
 		slog.Info("Window hidden — mining continues in the tray", "tag", "App")
-		a.notify("Still running in the tray", "Twitch Drops Miner keeps mining. Right-click the tray icon to quit.")
+		a.notify(a.tr("notify.trayTitle"), a.tr("notify.trayBody"))
 	}
 	return true
 }

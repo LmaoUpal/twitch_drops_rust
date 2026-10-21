@@ -70,13 +70,13 @@ func (a *App) notifyCampaignChanges(snap catalog.Snapshot) {
 
 	if cfg.Notify.CampaignStarted {
 		for _, c := range started {
-			a.notify("Campaign started: "+c.Game.Name, c.Name)
+			a.notify(a.tr("notify.started", c.Game.Name), c.Name)
 		}
 	}
 	for _, c := range unlinked {
 		slog.Warn(c.Game.Name+" account not linked — drops can't be claimed", "game", c.Game.Name)
 		if cfg.Notify.AccountNotLinked {
-			a.notify(c.Game.Name+" account not linked", "Link it to claim drops from "+c.Name+".")
+			a.notify(a.tr("notify.unlinkedTitle", c.Game.Name), a.tr("notify.unlinkedBody", c.Name))
 		}
 	}
 }
@@ -86,7 +86,7 @@ func (a *App) notifyClaimed(drop, campaign string) {
 	on := a.cfg.Notify.DropClaimed
 	a.mu.Unlock()
 	if on {
-		a.notify("Drop claimed: "+drop, campaign)
+		a.notify(a.tr("notify.claimed", drop), campaign)
 	}
 }
 

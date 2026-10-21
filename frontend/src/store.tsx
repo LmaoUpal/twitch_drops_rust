@@ -2,6 +2,7 @@ import {createContext, ReactNode, useContext, useEffect, useRef, useState} from 
 import {GetActivity, GetAuthStatus, GetAutoState, GetCampaigns, GetSettings, GetWatchState, SaveSettings} from "../wailsjs/go/main/App";
 import {activity, catalog, config, main} from "../wailsjs/go/models";
 import {EventsOn} from "../wailsjs/runtime/runtime";
+import {setLang} from "./i18n";
 
 export type Page = 'dashboard' | 'campaigns' | 'inventory' | 'activity' | 'settings';
 
@@ -80,6 +81,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
         });
     }
 
+    setLang(settings?.language ?? 'en');
     return (
         <Ctx.Provider value={{auth, snapshot, watch, auto, settings, activity: log, now, page, setPage, updateSettings, settingsError}}>
             {children}

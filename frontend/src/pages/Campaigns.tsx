@@ -10,6 +10,7 @@ import {useStore} from '../store';
 import {campaignPhase, coverImage, dropState, DropState, isRust, parentCampaignId, Phase} from '../lib/derive';
 import {fmtCountdown, fmtDuration, fmtHM, fmtMinutes, fmtRange, fmtViewers, isSet, pct} from '../lib/format';
 import {Avatar, Badge, Banner, Button, Chip, Empty, GameIcon, Progress, Thumb} from '../components/ui';
+import {Key, t, tn} from '../i18n';
 
 const FACEPUNCH_URL = 'https://twitch.facepunch.com/';
 
@@ -31,10 +32,10 @@ export function DropTile({c, d, now, current}: { c: models.Campaign; d: models.D
             right = <CircleCheck size={12} color="var(--success-text)"/>;
             break;
         case 'ready':
-            right = <span style={{color: 'var(--success-text)', fontWeight: 600}}>Ready</span>;
+            right = <span style={{color: 'var(--success-text)', fontWeight: 600}}>{t('camp.ready')}</span>;
             break;
         case 'locked':
-            right = <span>Locked</span>;
+            right = <span>{t('camp.locked')}</span>;
             break;
         default:
             right = <span style={{color: current && rust ? 'var(--rust-text)' : 'var(--accent-text)', fontWeight: 600}}>{p}%</span>;
@@ -47,18 +48,18 @@ export function DropTile({c, d, now, current}: { c: models.Campaign; d: models.D
             </div>
             <div>
                 <div className="drop-tile-name">{d.name}</div>
-                <div className="drop-tile-req">{fmtMinutes(d.requiredMinutes)} watch time</div>
+                <div className="drop-tile-req">{t('camp.watchTime', {t: fmtMinutes(d.requiredMinutes)})}</div>
             </div>
             <div>
                 <Progress thin value={state === 'claimed' ? 100 : p}
                           tone={state === 'claimed' || state === 'ready' ? 'success' : current && rust ? 'rust' : undefined}/>
                 <div className="drop-tile-meta">
-                    <span>{state === 'claimed' ? 'Claimed' : `${fmtMinutes(d.currentMinutes)} / ${fmtMinutes(d.requiredMinutes)}`}</span>
+                    <span>{state === 'claimed' ? t('camp.claimed') : `${fmtMinutes(d.currentMinutes)} / ${fmtMinutes(d.requiredMinutes)}`}</span>
                     {right}
                 </div>
             </div>
             {state === 'ready' && d.instanceId && (
-                <Button variant="success" size="sm" block icon={Gift} onClick={() => ClaimDrop(d.instanceId)}>Claim</Button>
+                <Button variant="success" size="sm" block icon={Gift} onClick={() => ClaimDrop(d.instanceId)}>{t('common.claim')}</Button>
             )}
         </div>
     );
@@ -71,8 +72,8 @@ function StreamerSection({c, now, watchingLogin}: { c: models.Campaign; now: num
         <div className="section sunken" style={{flexDirection: 'row', gap: 16}}>
             <div className="grow col" style={{gap: 10}}>
                 <div className="row">
-                    <span className="overline" style={{color: 'var(--rust-text)'}}>Streamer drop · only on</span>
-                    <span className="faint" style={{fontSize: 12}}>progress counts only on these channels</span>
+                    <span className="overline" style={{color: 'var(--rust-text)'}}>{t('camp.streamerOnly')}</span>
+                    <span className="faint" style={{fontSize: 12}}>{t('camp.onlyChannels')}</span>
                 </div>
                 {c.allowedChannels.map(ch => {
                     const watching = ch.login.toLowerCase() === watchingLogin;
@@ -82,18 +83,18 @@ function StreamerSection({c, now, watchingLogin}: { c: models.Campaign; now: num
                             <div className="grow col" style={{gap: 1}}>
                                 <span style={{fontWeight: 600}}>{ch.displayName || ch.login}</span>
                                 <span className="muted" style={{fontSize: 12}}>
-                                    {ch.online ? `Live · ${fmtViewers(ch.viewers)} viewers${ch.gameName ? ` · ${ch.gameName}` : ''}` : 'Offline'}
+                                    {ch.online ? `${t('camp.liveViewers', {n: fmtViewers(ch.viewers)})}${ch.gameName ? ` · ${ch.gameName}` : ''}` : t('camp.offline')}
                                 </span>
                             </div>
                             {watching
-                                ? <Button variant="primary" size="sm" icon={AudioLines}>Watching</Button>
+                                ? <Button variant="primary" size="sm" icon={AudioLines}>{t('common.watching')}</Button>
                                 : <Button size="sm" icon={Eye} disabled={!ch.online || !active}
-                                          onClick={() => WatchChannel(ch.login)}>Watch</Button>}
+                                          onClick={() => WatchChannel(ch.login)}>{t('common.watch')}</Button>}
                         </div>
                     );
                 })}
                 <span className="faint" style={{fontSize: 12}}>
-                    Only {names} carries the {c.drops?.map(d => d.name).join(', ')}. When it goes offline, pick another channel.
+                    {t('camp.onlyCarries', {names, drops: c.drops?.map(d => d.name).join(', ') ?? ''})}
                 </span>
             </div>
             <div style={{width: 156}}>
@@ -105,11 +106,11 @@ function StreamerSection({c, now, watchingLogin}: { c: models.Campaign; now: num
 
 function LinkStatus({c}: { c: models.Campaign }) {
     if (c.source === 'facepunch') {
-        return <span><Link size={13}/><a onClick={() => BrowserOpenURL(c.linkUrl)}>Steam must be linked</a></span>;
+        return <span><Link size={13}/><a onClick={() => BrowserOpenURL(c.linkUrl)}>{t('camp.steamLink')}</a></span>;
     }
     return c.accountLinked
-        ? <span className="ok"><CircleCheck size={13}/>Account linked</span>
-        : <span className="bad"><Link2Off size={13}/>Account not linked</span>;
+        ? <span className="ok"><CircleCheck size={13}/>{t('camp.linked')}</span>
+        : <span className="bad"><Link2Off size={13}/>{t('camp.unlinked')}</span>;
 }
 
 /** Turns on "campaign started" notifications; they cover every tracked game. */
@@ -117,8 +118,8 @@ function NotifyButton() {
     const {settings, updateSettings} = useStore();
     const on = !!settings?.notify.campaignStarted;
     return on
-        ? <Button variant="ghost" icon={BellRing} title="You get a desktop notification when tracked campaigns start">Notifying</Button>
-        : <Button icon={Bell} onClick={() => updateSettings(c => { c.notify.campaignStarted = true; })}>Notify me</Button>;
+        ? <Button variant="ghost" icon={BellRing} title={t('camp.notifyingTitle')}>{t('camp.notifying')}</Button>
+        : <Button icon={Bell} onClick={() => updateSettings(c => { c.notify.campaignStarted = true; })}>{t('camp.notify')}</Button>;
 }
 
 function CampaignCard({c, children, now, watchingLogin}: {
@@ -139,25 +140,25 @@ function CampaignCard({c, children, now, watchingLogin}: {
                 <div className="grow col" style={{gap: 6}}>
                     <div className="row" style={{gap: 8}}>
                         <span className="campaign-name">{c.name}</span>
-                        {phase === 'active' && <Badge tone="success" dot>Active</Badge>}
-                        {phase === 'upcoming' && <Badge tone="warning" dot>Upcoming</Badge>}
-                        {phase === 'completed' && <Badge tone="success">Completed</Badge>}
-                        {phase === 'ended' && <Badge>Ended</Badge>}
+                        {phase === 'active' && <Badge tone="success" dot>{t('camp.active')}</Badge>}
+                        {phase === 'upcoming' && <Badge tone="warning" dot>{t('camp.upcoming')}</Badge>}
+                        {phase === 'completed' && <Badge tone="success">{t('camp.completed')}</Badge>}
+                        {phase === 'ended' && <Badge>{t('camp.ended')}</Badge>}
                         {c.source === 'facepunch' ? <Badge tone="rust" dot>Facepunch</Badge> : <Badge tone="accent" dot>Twitch</Badge>}
-                        {!c.accountLinked && <Badge tone="error" dot>Not linked</Badge>}
+                        {!c.accountLinked && <Badge tone="error" dot>{t('camp.notLinked')}</Badge>}
                     </div>
                     <div className="meta-row">
                         <span><Calendar size={13}/>{fmtRange(c.startAt, c.endAt)}</span>
-                        {phase === 'active' && <span><Hourglass size={13}/>ends in {fmtDuration(Date.parse(c.endAt) - now)}</span>}
-                        {phase === 'upcoming' && <span><Gift size={13}/>{drops.length} drops</span>}
+                        {phase === 'active' && <span><Hourglass size={13}/>{t('camp.endsIn', {t: fmtDuration(Date.parse(c.endAt) - now)})}</span>}
+                        {phase === 'upcoming' && <span><Gift size={13}/>{tn('camp.dropsN', drops.length)}</span>}
                         <LinkStatus c={c}/>
-                        {phase !== 'upcoming' && <span><Gift size={13}/>{claimed} of {drops.length} claimed</span>}
+                        {phase !== 'upcoming' && <span><Gift size={13}/>{t('camp.claimedOf', {c: claimed, n: drops.length})}</span>}
                     </div>
                 </div>
                 {phase === 'upcoming' ? (
                     <>
                         <div className="countdown">
-                            <div className="overline">Starts in</div>
+                            <div className="overline">{t('camp.startsIn')}</div>
                             <div className="mono">{fmtCountdown(Date.parse(c.startAt) - now)}</div>
                         </div>
                         <NotifyButton/>
@@ -172,17 +173,17 @@ function CampaignCard({c, children, now, watchingLogin}: {
                 <>
                     {!c.accountLinked && (
                         <div style={{padding: '12px 16px 0'}}>
-                            <Banner icon={Link2Off} title={`Your ${c.game.name} account isn't linked to Twitch`}
-                                    action={c.linkUrl && <Button variant="primary" size="sm" icon={Link} onClick={() => BrowserOpenURL(c.linkUrl)}>Link account</Button>}>
-                                Watch time still counts, but drops can't be claimed until you link it. Link on the publisher's site, then press Refresh.
+                            <Banner icon={Link2Off} title={t('camp.unlinkedTitle', {game: c.game.name})}
+                                    action={c.linkUrl && <Button variant="primary" size="sm" icon={Link} onClick={() => BrowserOpenURL(c.linkUrl)}>{t('camp.linkAccount')}</Button>}>
+                                {t('camp.unlinkedText')}
                             </Banner>
                         </div>
                     )}
                     {general && (general.drops?.length ?? 0) > 0 && (
                         <div className="section">
                             <div className="row">
-                                <span className="overline">{streamer.length ? 'General drops' : 'Drops'}</span>
-                                <span className="faint" style={{fontSize: 12}}>any {c.game.name} stream with drops enabled</span>
+                                <span className="overline">{streamer.length ? t('camp.generalDrops') : t('camp.drops')}</span>
+                                <span className="faint" style={{fontSize: 12}}>{t('camp.anyStream', {game: c.game.name})}</span>
                             </div>
                             <div className="drop-grid">
                                 {general.drops.map(d => <DropTile key={d.id} c={c} d={d} now={now}/>)}
@@ -246,46 +247,45 @@ export default function Campaigns() {
         setTimeout(() => setRefreshing(false), 1500);
     }
 
-    const synced = snapshot && isSet(snapshot.updatedAt) ? ` · synced ${fmtHM(snapshot.updatedAt)}` : '';
+    const synced = snapshot && isSet(snapshot.updatedAt) ? t('camp.synced', {t: fmtHM(snapshot.updatedAt)}) : '';
     return (
         <>
             <div className="page-header">
                 <div className="grow">
-                    <h1 className="page-title">Campaigns</h1>
-                    <div className="page-subtitle">{roots.length} campaigns for {games.length} tracked {games.length === 1 ? 'game' : 'games'}{synced}</div>
+                    <h1 className="page-title">{t('camp.title')}</h1>
+                    <div className="page-subtitle">{t('camp.subtitle', {campaigns: tn('camp.campaignsN', roots.length), games: tn('camp.gamesN', games.length)})}{synced}</div>
                 </div>
                 <label className="input" style={{width: 220}}>
                     <Search size={14}/>
-                    <input placeholder="Search campaigns…" value={query} onChange={e => setQuery(e.target.value)}/>
+                    <input placeholder={t('camp.search')} value={query} onChange={e => setQuery(e.target.value)}/>
                 </label>
                 <label className="input" style={{width: 'auto', paddingRight: 4, borderColor: 'var(--border-strong)'}}>
                     <Gamepad2 size={14} color="var(--text-primary)"/>
                     <select value={game} onChange={e => setGame(e.target.value)} style={{fontWeight: 600, cursor: 'pointer'}}>
-                        <option value="">All games</option>
+                        <option value="">{t('common.allGames')}</option>
                         {games.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
                 </label>
-                <Button icon={RefreshCw} title="Refresh" onClick={refresh} className={refreshing ? 'refreshing' : ''}/>
+                <Button icon={RefreshCw} title={t('common.refresh')} onClick={refresh} className={refreshing ? 'refreshing' : ''}/>
             </div>
             <div className="toolbar">
-                <Chip active={filter === 'active'} count={counts.active} onClick={() => setFilter('active')}>Active</Chip>
-                <Chip active={filter === 'upcoming'} count={counts.upcoming} onClick={() => setFilter('upcoming')}>Upcoming</Chip>
-                <Chip active={filter === 'completed'} count={counts.completed} onClick={() => setFilter('completed')}>Completed</Chip>
+                <Chip active={filter === 'active'} count={counts.active} onClick={() => setFilter('active')}>{t('camp.active')}</Chip>
+                <Chip active={filter === 'upcoming'} count={counts.upcoming} onClick={() => setFilter('upcoming')}>{t('camp.upcoming')}</Chip>
+                <Chip active={filter === 'completed'} count={counts.completed} onClick={() => setFilter('completed')}>{t('camp.completed')}</Chip>
                 <span className="sep"/>
-                <Chip active={hideUnlinked} onClick={() => setHideUnlinked(v => !v)}>Hide unlinked</Chip>
+                <Chip active={hideUnlinked} onClick={() => setHideUnlinked(v => !v)}>{t('camp.hideUnlinked')}</Chip>
                 <span className="grow"/>
-                <span className="faint" style={{fontSize: 12}}>Sort: {filter === 'upcoming' ? 'starts soonest' : 'ends soonest'}</span>
+                <span className="faint" style={{fontSize: 12}}>{filter === 'upcoming' ? t('camp.sortStarts') : t('camp.sortEnds')}</span>
             </div>
-            {snapshot?.warnings?.map(w => <Banner key={w} icon={Link2Off} title="A campaign source failed">{w}</Banner>)}
+            {snapshot?.warnings?.map(w => <Banner key={w} icon={Link2Off} title={t('camp.sourceFailed')}>{w}</Banner>)}
             {shown.length === 0 ? (
                 <div className="card" style={{flex: 1, display: 'flex'}}>
-                    <Empty icon={PackageOpen} title={roots.length ? `No ${filter} campaigns` : 'No campaigns right now'}
+                    <Empty icon={PackageOpen} title={roots.length ? t(({active: 'camp.noActive', upcoming: 'camp.noUpcoming', completed: 'camp.noCompleted'} as Record<Filter, Key>)[filter]) : t('camp.none')}
                            actions={<>
-                               <Button variant="primary" icon={Plus} onClick={() => setPage('settings')}>Add games</Button>
+                               <Button variant="primary" icon={Plus} onClick={() => setPage('settings')}>{t('camp.addGames')}</Button>
                                <Button icon={ExternalLink} onClick={() => BrowserOpenURL(FACEPUNCH_URL)}>twitch.facepunch.com</Button>
                            </>}>
-                        Twitch only lists campaigns you already have progress in; Rust campaigns come from twitch.facepunch.com.
-                        Facepunch usually announces Rust drops a few days ahead.
+                        {t('camp.emptyText')}
                     </Empty>
                 </div>
             ) : rustFirst.map(g => {
@@ -297,7 +297,7 @@ export default function Campaigns() {
                             <GameIcon name={g}/>
                             <span className="game-group-name">{g}</span>
                             <span className="faint" style={{fontSize: 12}}>
-                                {list[0].source === 'facepunch' ? 'Facepunch · ' : ''}{active ? `${active} active` : `${list.length} ${filter}`}
+                                {list[0].source === 'facepunch' ? 'Facepunch · ' : ''}{active ? tn('camp.activeN', active) : tn(({active: 'camp.activeN', upcoming: 'camp.upcomingN', completed: 'camp.completedN'} as Record<Filter, Key>)[filter], list.length)}
                             </span>
                         </div>
                         {list.map(c => <CampaignCard key={c.id} c={c} children={childrenOf.get(c.id) ?? []} now={now} watchingLogin={watchingLogin}/>)}
