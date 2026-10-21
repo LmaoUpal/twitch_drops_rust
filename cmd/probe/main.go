@@ -12,20 +12,36 @@ import (
 	"os"
 
 	"github.com/LmaoUpal/twitch_drops_rust/internal/config"
+	"github.com/LmaoUpal/twitch_drops_rust/internal/facepunch"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/auth"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/gql"
 )
 
 func main() {
+	fp := flag.Bool("facepunch", false, "fetch and print the parsed twitch.facepunch.com schedule instead")
 	query := flag.String("query", "", "raw GraphQL query instead of a persisted -op")
 	op := flag.String("op", "ViewerDropsDashboard", "GQL operation name (must have a hash in config)")
 	vars := flag.String("vars", "{}", "operation variables as JSON")
 	flag.Parse()
 
-	if err := run(*op, *query, *vars); err != nil {
+	runner := func() error { return run(*op, *query, *vars) }
+	if *fp {
+		runner = runFacepunch
+	}
+	if err := runner(); err != nil {
 		fmt.Fprintln(os.Stderr, "probe:", err)
 		os.Exit(1)
 	}
+}
+
+func runFacepunch() error {
+	campaigns, err := facepunch.Fetch(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(campaigns)
 }
 
 func run(op, query, rawVars string) error {
