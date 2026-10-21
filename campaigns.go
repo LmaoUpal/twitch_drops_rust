@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -18,7 +19,12 @@ import (
 	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/gql"
 )
 
-const campaignRefreshInterval = 15 * time.Minute
+// refreshInterval is how often campaigns are reloaded, from settings.
+func (a *App) refreshInterval() time.Duration {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return time.Duration(max(a.cfg.RefreshSeconds, config.MinRefreshSeconds)) * time.Second
+}
 
 // GetCampaigns returns the last loaded campaign snapshot.
 func (a *App) GetCampaigns() catalog.Snapshot {
@@ -41,7 +47,7 @@ func (a *App) RefreshCampaigns() {
 	}
 }
 
-// startCampaignLoop reloads campaigns now and every campaignRefreshInterval until logout.
+// startCampaignLoop loads the profile, then reloads campaigns now and every refreshInterval until logout.
 func (a *App) startCampaignLoop(tok *auth.Token) {
 	a.mu.Lock()
 	if a.stopLoop != nil && a.loopForToken == tok.AccessToken {
@@ -58,14 +64,13 @@ func (a *App) startCampaignLoop(tok *auth.Token) {
 
 	client := a.gqlClient(tok)
 	go func() {
-		ticker := time.NewTicker(campaignRefreshInterval)
-		defer ticker.Stop()
+		a.loadProfile(ctx, client, tok.Login)
 		for {
 			a.loadCampaigns(ctx, client)
 			select {
 			case <-ctx.Done():
 				return
-			case <-ticker.C:
+			case <-time.After(a.refreshInterval()):
 			case <-refresh:
 			}
 		}
@@ -90,14 +95,16 @@ func (a *App) loadCampaigns(ctx context.Context, client *gql.Client) {
 		return
 	}
 	if err != nil {
-		slog.Warn("load campaigns", "err", err)
+		slog.Error("Couldn't load campaigns", "tag", "Twitch", "err", err)
 		snap.Warnings = append(snap.Warnings, err.Error())
 		a.mu.Lock()
-		snap.Campaigns = a.campaigns.Campaigns // keep showing the last good list
+		snap.Campaigns, snap.Claimed = a.campaigns.Campaigns, a.campaigns.Claimed // keep showing the last good list
 		a.mu.Unlock()
+	} else {
+		slog.Info(fmt.Sprintf("Campaigns refreshed — %d campaigns", len(snap.Campaigns)), "tag", "Twitch")
 	}
 	for _, w := range snap.Warnings {
-		slog.Warn("campaign source", "warning", w)
+		slog.Warn(w, "tag", "Sources")
 	}
 	a.mu.Lock()
 	a.campaigns = snap
@@ -105,7 +112,27 @@ func (a *App) loadCampaigns(ctx context.Context, client *gql.Client) {
 	runtime.EventsEmit(a.ctx, eventCampaigns, snap)
 }
 
+// loadProfile fills in the signed-in user's avatar for the UI.
+func (a *App) loadProfile(ctx context.Context, client *gql.Client, login string) {
+	ch, err := client.StreamInfo(ctx, login)
+	if err != nil {
+		slog.Warn("Couldn't load profile", "tag", "Twitch", "err", err)
+		return
+	}
+	a.mu.Lock()
+	if a.status.State != authLoggedIn {
+		a.mu.Unlock()
+		return
+	}
+	a.status.AvatarURL, a.status.DisplayName = ch.AvatarURL, ch.DisplayName
+	s := a.status
+	a.mu.Unlock()
+	runtime.EventsEmit(a.ctx, eventAuthStatus, s)
+}
+
 func (a *App) wantsRust() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	if len(a.cfg.Games) == 0 {
 		return true
 	}
@@ -118,6 +145,8 @@ func (a *App) wantsRust() bool {
 }
 
 func (a *App) gqlClient(tok *auth.Token) *gql.Client {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	return &gql.Client{
 		ClientID:  a.cfg.Twitch.ClientID,
 		UserAgent: a.cfg.Twitch.UserAgent,

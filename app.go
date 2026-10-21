@@ -8,6 +8,7 @@ import (
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
+	"github.com/LmaoUpal/twitch_drops_rust/internal/activity"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/catalog"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/config"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/auth"
@@ -32,9 +33,11 @@ const (
 )
 
 type AuthStatus struct {
-	State string `json:"state"`
-	Login string `json:"login"`
-	Error string `json:"error"`
+	State       string `json:"state"`
+	Login       string `json:"login"`
+	DisplayName string `json:"displayName"`
+	AvatarURL   string `json:"avatarUrl"`
+	Error       string `json:"error"`
 }
 
 type LoginPrompt struct {
@@ -50,6 +53,7 @@ type App struct {
 	cfgPath string
 	cfg     config.Config
 	session *auth.Session
+	feed    *activity.Feed
 
 	mu          sync.Mutex
 	status      AuthStatus
@@ -66,21 +70,22 @@ type App struct {
 	stopWatch context.CancelFunc
 }
 
-func NewApp() *App {
-	return &App{cfg: config.Default(), status: AuthStatus{State: authChecking}, watch: WatchState{State: watchIdle}}
+func NewApp(feed *activity.Feed) *App {
+	return &App{feed: feed, cfg: config.Default(), status: AuthStatus{State: authChecking}, watch: WatchState{State: watchIdle}}
 }
 
 // startup is called when the app starts. The context is saved
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.feed.OnEntry(func(e activity.Entry) { runtime.EventsEmit(ctx, eventActivity, e) })
 	if path, err := config.Path(); err != nil {
-		slog.Error("config path", "err", err)
+		slog.Error("Config location unknown", "tag", "App", "err", err)
 	} else {
 		a.cfgPath = path
 		cfg, err := config.Load(path)
 		if err != nil {
-			slog.Error("load config, using defaults", "path", path, "err", err)
+			slog.Error("Couldn't read config, using defaults", "tag", "App", "err", err)
 		}
 		a.cfg = cfg
 	}
@@ -100,17 +105,6 @@ func (a *App) startup(ctx context.Context) {
 	}()
 }
 
-// GetConfig returns the current settings.
-func (a *App) GetConfig() config.Config {
-	return a.cfg
-}
-
-// SetGames replaces the game priority list and persists it.
-func (a *App) SetGames(games []string) error {
-	a.cfg.Games = games
-	return config.Save(a.cfgPath, a.cfg)
-}
-
 // GetAuthStatus returns the current login state without touching the network.
 func (a *App) GetAuthStatus() AuthStatus {
 	a.mu.Lock()
@@ -124,11 +118,12 @@ func (a *App) Restore() {
 	tok, err := a.session.Restore(a.ctx)
 	switch {
 	case err == nil:
+		slog.Info("Signed in as "+tok.Login, "tag", "App", "ok", true)
 		a.setStatus(AuthStatus{State: authLoggedIn, Login: tok.Login}, tok)
 	case errors.Is(err, auth.ErrNoToken):
 		a.setStatus(AuthStatus{State: authLoggedOut}, nil)
 	default:
-		slog.Warn("restore session", "err", err)
+		slog.Warn("Couldn't check saved login", "tag", "Twitch", "err", err)
 		a.setStatus(AuthStatus{State: authOffline, Error: err.Error()}, nil)
 	}
 }
@@ -156,10 +151,10 @@ func (a *App) StartLogin() (LoginPrompt, error) {
 		case errors.Is(err, context.Canceled):
 			return
 		case err != nil:
-			slog.Warn("device login", "err", err)
+			slog.Warn("Login failed", "tag", "Twitch", "err", err)
 			a.setStatus(AuthStatus{State: authLoggedOut, Error: err.Error()}, nil)
 		default:
-			slog.Info("logged in", "login", tok.Login)
+			slog.Info("Signed in as "+tok.Login, "tag", "App", "ok", true)
 			a.setStatus(AuthStatus{State: authLoggedIn, Login: tok.Login}, tok)
 		}
 	}()

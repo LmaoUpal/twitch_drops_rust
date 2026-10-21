@@ -109,14 +109,14 @@ func (w *Watcher) Watch(ctx context.Context, s Stream) error {
 			}
 		case err != nil && ctx.Err() == nil:
 			st.Err = err.Error()
-			log.Warn("poll segments", "err", err)
+			log.Warn("Segment requests failed", "err", err)
 		}
 
 		if time.Since(lastSpade) >= w.spadeInterval() {
 			if err := w.sendSpade(ctx, spadeURL, payload); err != nil {
 				if ctx.Err() == nil {
 					st.Err = err.Error()
-					log.Warn("spade", "err", err)
+					log.Warn("minute-watched event failed", "err", err)
 				}
 			} else {
 				st.SpadeEvents++
@@ -250,7 +250,7 @@ func (w *Watcher) spadeURL(ctx context.Context, login string) string {
 			}
 		}
 	}
-	w.logger().Info("spade url not found, using fallback", "err", err)
+	w.logger().Debug("spade url not found, using fallback", "err", err)
 	return fallbackSpadeURL
 }
 

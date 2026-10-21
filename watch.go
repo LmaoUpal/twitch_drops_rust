@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -70,6 +71,7 @@ func (a *App) WatchChannel(login string) error {
 		a.setWatch(func(s *WatchState) { s.State, s.Channel = watchOffline, ch })
 		return nil
 	}
+	slog.Info("Watching "+ch.DisplayName, "channel", ch.DisplayName, "ok", true)
 	a.setWatch(func(s *WatchState) { s.State, s.Channel = watchActive, ch })
 
 	w := &watcher.Watcher{
@@ -86,10 +88,10 @@ func (a *App) WatchChannel(login string) error {
 		switch {
 		case errors.Is(err, context.Canceled):
 		case errors.Is(err, watcher.ErrOffline):
-			slog.Info("channel went offline", "channel", login)
+			slog.Warn("Channel offline: "+ch.DisplayName, "channel", ch.DisplayName)
 			a.setWatch(func(s *WatchState) { s.State = watchOffline })
 		default:
-			slog.Warn("watch", "channel", login, "err", err)
+			slog.Error("Watching stopped", "channel", ch.DisplayName, "err", err)
 			a.setWatch(func(s *WatchState) { s.State, s.Error = watchError, err.Error() })
 		}
 		cancel()
@@ -122,13 +124,18 @@ func (a *App) trackDropSession(ctx context.Context, client *gql.Client, channelI
 		s, err := client.CurrentDrop(ctx, channelID)
 		if err != nil {
 			if ctx.Err() == nil {
-				slog.Warn("current drop", "err", err)
+				slog.Warn("Couldn't check drop progress", "tag", "Twitch", "err", err)
 			}
 			continue
 		}
-		if ctx.Err() == nil {
-			a.setWatch(func(st *WatchState) { st.Session = s })
+		if ctx.Err() != nil {
+			return
 		}
+		prev := a.GetWatchState().Session
+		if s.DropID != "" && (s.DropID != prev.DropID || s.CurrentMinutes != prev.CurrentMinutes) {
+			slog.Info(fmt.Sprintf("Drop progress %d / %d min", s.CurrentMinutes, s.RequiredMinutes), "tag", "Twitch")
+		}
+		a.setWatch(func(st *WatchState) { st.Session = s })
 	}
 }
 

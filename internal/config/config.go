@@ -20,10 +20,26 @@ type Config struct {
 	Games            []string `toml:"games" json:"games"`                        // priority order, first is most wanted
 	ExcludedChannels []string `toml:"excluded_channels" json:"excludedChannels"` // logins never to watch
 	AutoClaim        bool     `toml:"auto_claim" json:"autoClaim"`
+	StartWithWindows bool     `toml:"start_with_windows" json:"startWithWindows"`
+	MinimizeToTray   bool     `toml:"minimize_to_tray" json:"minimizeToTray"`
+	Notify           Notify   `toml:"notify" json:"notify"`
+	Language         string   `toml:"language" json:"language"` // "en" or "ru"
+	// RefreshSeconds is how often campaigns and inventory are re-synced.
+	RefreshSeconds int `toml:"refresh_seconds" json:"refreshSeconds"`
 	// DeviceID is sent as X-Device-Id; generated once on first launch.
 	DeviceID string `toml:"device_id,omitempty" json:"-"`
 	Twitch   Twitch `toml:"twitch" json:"twitch"`
 }
+
+// Notify selects which desktop notifications are shown.
+type Notify struct {
+	DropClaimed      bool `toml:"drop_claimed" json:"dropClaimed"`
+	CampaignStarted  bool `toml:"campaign_started" json:"campaignStarted"`
+	AccountNotLinked bool `toml:"account_not_linked" json:"accountNotLinked"`
+}
+
+// MinRefreshSeconds is the lowest allowed RefreshSeconds.
+const MinRefreshSeconds = 30
 
 type Twitch struct {
 	ClientID  string `toml:"client_id,omitempty" json:"clientId"`
@@ -42,8 +58,12 @@ type Twitch struct {
 // Update them here or in config.toml when Twitch rotates them.
 func Default() Config {
 	return Config{
-		Games:     []string{"Rust"},
-		AutoClaim: true,
+		Games:          []string{"Rust"},
+		AutoClaim:      true,
+		MinimizeToTray: true,
+		Notify:         Notify{DropClaimed: true, AccountNotLinked: true},
+		Language:       "en",
+		RefreshSeconds: 300,
 		Twitch: Twitch{
 			ClientID:  "ue6666qo983tsx6so1t0vnawi233wa",
 			ClientURL: "https://android.tv.twitch.tv",
