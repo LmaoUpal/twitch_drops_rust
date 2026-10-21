@@ -2,6 +2,7 @@ package gql
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/LmaoUpal/twitch_drops_rust/internal/models"
@@ -283,4 +284,22 @@ func (c *Client) CurrentDrop(ctx context.Context, channelID string) (DropSession
 		ds.ChannelID = s.Channel.ID
 	}
 	return ds, nil
+}
+
+// ClaimDrop claims a completed drop by its instance id and returns Twitch's status,
+// e.g. "ELIGIBLE_FOR_ALL" or "DROP_INSTANCE_ALREADY_CLAIMED".
+func (c *Client) ClaimDrop(ctx context.Context, instanceID string) (string, error) {
+	var out struct {
+		ClaimDropRewards *struct {
+			Status string `json:"status"`
+		} `json:"claimDropRewards"`
+	}
+	vars := map[string]any{"input": map[string]any{"dropInstanceID": instanceID}}
+	if err := c.Do(ctx, "DropsPage_ClaimDropRewards", vars, &out); err != nil {
+		return "", err
+	}
+	if out.ClaimDropRewards == nil {
+		return "", errors.New("gql: claim returned no result")
+	}
+	return out.ClaimDropRewards.Status, nil
 }

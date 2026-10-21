@@ -75,3 +75,12 @@ func TestGameStreams(t *testing.T) {
 		t.Fatalf("got %+v", got)
 	}
 }
+
+func TestClaimDrop(t *testing.T) {
+	c := fixtureClient(t)
+	c.Hashes["DropsPage_ClaimDropRewards"] = "h"
+	status, err := c.ClaimDrop(context.Background(), "inst-1")
+	if err != nil || status != "ELIGIBLE_FOR_ALL" {
+		t.Fatalf("got %q, %v", status, err)
+	}
+}
