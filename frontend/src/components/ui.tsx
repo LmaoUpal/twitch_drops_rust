@@ -1,5 +1,5 @@
-import {ReactNode} from 'react';
-import {Flame, Gamepad2, LucideIcon} from 'lucide-react';
+import {ReactNode, useEffect, useRef, useState} from 'react';
+import {Check, ChevronDown, Flame, Gamepad2, LucideIcon} from 'lucide-react';
 import {gameColor} from '../lib/derive';
 import {t} from '../i18n';
 
@@ -141,5 +141,51 @@ export function TwitchIcon({size = 16}: { size?: number }) {
         <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden>
             <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0 1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
         </svg>
+    );
+}
+
+export interface SelectOption<T extends string> {
+    value: T;
+    label: string;
+}
+
+/** Dropdown in the app style; the native <select> popup ignores the dark theme in WebView2. */
+export function Select<T extends string>({value, options, onChange, icon: Icon}: {
+    value: T; options: SelectOption<T>[]; onChange(v: T): void; icon?: LucideIcon;
+}) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!open) return;
+        const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+        const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+        document.addEventListener('mousedown', close);
+        document.addEventListener('keydown', esc);
+        return () => {
+            document.removeEventListener('mousedown', close);
+            document.removeEventListener('keydown', esc);
+        };
+    }, [open]);
+    const current = options.find(o => o.value === value) ?? options[0];
+    return (
+        <div className="select" ref={ref}>
+            <button className="btn secondary" onClick={() => setOpen(v => !v)} aria-expanded={open}>
+                {Icon && <Icon size={14}/>}
+                <span className="ellipsis">{current?.label}</span>
+                <ChevronDown size={14} className="faint"/>
+            </button>
+            {open && (
+                <div className="select-menu" role="listbox">
+                    {options.map(o => (
+                        <button key={o.value} role="option" aria-selected={o.value === value}
+                                className={o.value === value ? 'selected' : ''}
+                                onClick={() => { onChange(o.value); setOpen(false); }}>
+                            <span className="grow ellipsis">{o.label}</span>
+                            {o.value === value && <Check size={14}/>}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 }

@@ -3,7 +3,7 @@ import {CircleCheck, Gamepad2, LayoutGrid, List, Package, Search} from 'lucide-r
 import {useStore} from '../store';
 import {fmtDay, fmtHM, fmtMonth, isSet} from '../lib/format';
 import {t, tn} from '../i18n';
-import {Badge, Button, Empty, Segmented} from '../components/ui';
+import {Badge, Button, Empty, Segmented, Select} from '../components/ui';
 
 interface Item {
     key: string;
@@ -69,13 +69,8 @@ export default function Inventory() {
                     <Search size={14}/>
                     <input placeholder={t('inv.search')} value={query} onChange={e => setQuery(e.target.value)}/>
                 </label>
-                <label className="input" style={{width: 'auto', paddingRight: 4, borderColor: 'var(--border-strong)'}}>
-                    <Gamepad2 size={14} color="var(--text-primary)"/>
-                    <select value={game} onChange={e => setGame(e.target.value)} style={{fontWeight: 600, cursor: 'pointer'}}>
-                        <option value="">{t('common.allGames')}</option>
-                        {games.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                </label>
+                <Select icon={Gamepad2} value={game} onChange={setGame}
+                        options={[{value: '', label: t('common.allGames')}, ...games.map(g => ({value: g, label: g}))]}/>
             </div>
 
             {items.length === 0 ? (

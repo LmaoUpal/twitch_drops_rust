@@ -816,3 +816,42 @@ a {
 .all-row-body { padding: 4px 14px 14px 64px; display: flex; flex-direction: column; gap: 10px; }
 .all-drops { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
 .all-drop { display: flex; align-items: center; gap: 10px; padding: 6px 8px; background: var(--surface-2); border-radius: var(--radius-md); min-width: 0; }
+.select { position: relative; flex-shrink: 0; }
+.select > .btn { max-width: 220px; }
+
+.select-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 100%;
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 30;
+    padding: 4px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 32px #00000066;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.select-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 30px;
+    padding: 0 10px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.select-menu button:hover { background: var(--surface-3); }
+.select-menu button.selected { color: var(--accent-text); }
