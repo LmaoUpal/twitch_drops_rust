@@ -6,3 +6,4 @@ frontend/node_modules
 CLAUDE.md
 PROJECT_LOG.md
 .claude/
+build/windows/installer/tmp/

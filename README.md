@@ -35,3 +35,14 @@ wails build
 ```
 
 The executable lands in `build/bin/`.
+
+## Installer
+
+Requires [NSIS](https://nsis.sourceforge.io) (`winget install NSIS.NSIS`, makensis on PATH):
+
+```bash
+wails build -nsis -installscope user
+```
+
+Produces `build/bin/TwitchDropsMiner-amd64-installer.exe`, which installs per user into
+`%LOCALAPPDATA%\Programs\Twitch Drops Miner` (no admin rights) and installs WebView2 if missing.

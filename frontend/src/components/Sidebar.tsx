@@ -5,7 +5,7 @@ import {fmtCountdown, fmtMinutes, isSet} from '../lib/format';
 import {Avatar, Progress} from './ui';
 import {t} from '../i18n';
 
-export const APP_VERSION = 'v0.4.0';
+export const APP_VERSION = 'v0.5.0';
 
 function NavItem({page, icon: Icon, label, count}: { page: Page; icon: LucideIcon; label: string; count?: number }) {
     const {page: current, setPage} = useStore();
