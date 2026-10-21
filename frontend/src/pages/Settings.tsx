@@ -231,22 +231,22 @@ export default function Settings() {
                         <SettingRow label="Auto-claim drops" help="Claim as soon as a drop is ready.">
                             <Toggle on={settings.autoClaim} onChange={v => set(c => { c.autoClaim = v; })}/>
                         </SettingRow>
-                        <SettingRow label="Start with Windows" help="Launch minimized to the tray at sign-in." soon>
+                        <SettingRow label="Start with Windows" help="Launch minimized to the tray at sign-in.">
                             <Toggle on={settings.startWithWindows} onChange={v => set(c => { c.startWithWindows = v; })}/>
                         </SettingRow>
-                        <SettingRow label="Minimize to tray on close" help="The × button hides the window; mining continues." soon>
+                        <SettingRow label="Minimize to tray on close" help="The × button hides the window; mining continues.">
                             <Toggle on={settings.minimizeToTray} onChange={v => set(c => { c.minimizeToTray = v; })}/>
                         </SettingRow>
                     </div>
                     <div className="card settings-card flush">
                         <h3>Desktop notifications</h3>
-                        <SettingRow label="Drop claimed" soon>
+                        <SettingRow label="Drop claimed">
                             <Toggle on={settings.notify.dropClaimed} onChange={v => set(c => { c.notify.dropClaimed = v; })}/>
                         </SettingRow>
-                        <SettingRow label="Campaign started" soon>
+                        <SettingRow label="Campaign started">
                             <Toggle on={settings.notify.campaignStarted} onChange={v => set(c => { c.notify.campaignStarted = v; })}/>
                         </SettingRow>
-                        <SettingRow label="Account not linked" soon>
+                        <SettingRow label="Account not linked">
                             <Toggle on={settings.notify.accountNotLinked} onChange={v => set(c => { c.notify.accountNotLinked = v; })}/>
                         </SettingRow>
                     </div>

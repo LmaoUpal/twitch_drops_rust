@@ -85,6 +85,7 @@ func (a *App) stopCampaignLoop() {
 		a.stopLoop()
 	}
 	a.stopLoop, a.refreshNow, a.loopForToken, a.autoKick = nil, nil, "", nil
+	a.seenActive, a.warnedUnlinked = nil, nil
 	a.campaigns = catalog.Snapshot{}
 }
 
@@ -103,6 +104,7 @@ func (a *App) loadCampaigns(ctx context.Context, client *gql.Client) {
 		a.mu.Unlock()
 	} else {
 		slog.Info(fmt.Sprintf("Campaigns refreshed — %d campaigns", len(snap.Campaigns)), "tag", "Twitch")
+		defer a.notifyCampaignChanges(snap)
 	}
 	for _, w := range snap.Warnings {
 		slog.Warn(w, "tag", "Sources")

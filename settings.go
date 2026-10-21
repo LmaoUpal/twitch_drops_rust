@@ -38,6 +38,15 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	}
 
 	a.mu.Lock()
+	autostartChanged := cfg.StartWithWindows != a.cfg.StartWithWindows
+	a.mu.Unlock()
+	if autostartChanged {
+		if err := setAutostart(cfg.StartWithWindows); err != nil {
+			return fmt.Errorf("start with Windows: %w", err)
+		}
+	}
+
+	a.mu.Lock()
 	cfg.DeviceID = a.cfg.DeviceID
 	cfg.AutoMode = a.cfg.AutoMode // owned by SetAutoMode; the UI copy may be stale
 	gamesChanged := !slices.Equal(cfg.Games, a.cfg.Games)

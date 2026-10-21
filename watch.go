@@ -176,4 +176,5 @@ func (a *App) setWatch(update func(*WatchState)) {
 	s := a.watch
 	a.mu.Unlock()
 	runtime.EventsEmit(a.ctx, eventWatch, s)
+	a.updateTray()
 }

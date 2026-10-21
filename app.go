@@ -71,6 +71,13 @@ type App struct {
 
 	auto     AutoState
 	autoKick chan struct{}
+
+	tray           tray
+	quitting       bool // Quit was chosen, so closing must not hide to the tray
+	hiddenOnce     bool
+	notifyReady    bool
+	seenActive     map[string]bool // campaign ids already active, for "campaign started"
+	warnedUnlinked map[string]bool
 }
 
 func NewApp(feed *activity.Feed) *App {
@@ -102,6 +109,13 @@ func (a *App) startup(ctx context.Context) {
 		Account: defaultAccount,
 	}
 	a.sessionID = gql.NewSessionID()
+	a.startTray()
+	go a.initNotifications()
+	if a.cfg.StartWithWindows {
+		if err := setAutostart(true); err != nil { // refresh the path in case the exe moved
+			slog.Warn("Couldn't update start with Windows", "tag", "App", "err", err)
+		}
+	}
 	go func() {
 		a.ensureDeviceID() // before any GQL call; network only on first launch
 		a.Restore()

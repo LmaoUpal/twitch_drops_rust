@@ -159,6 +159,7 @@ func (a *App) setAuto(update func(*AutoState)) {
 	s := a.auto
 	a.mu.Unlock()
 	runtime.EventsEmit(a.ctx, eventAuto, s)
+	a.updateTray()
 }
 
 // startAutoLoop runs auto mode (and auto-claim, which works in both modes) until ctx ends.
@@ -348,6 +349,7 @@ func (a *App) claim(ctx context.Context, client *gql.Client, it miner.ClaimItem)
 		return err
 	}
 	slog.Info(fmt.Sprintf("Claimed: %s — %s", it.Drop.Name, it.Campaign.Name), "game", it.Campaign.Game.Name, "ok", true)
+	a.notifyClaimed(it.Drop.Name, it.Campaign.Name)
 	if status != "" && status != "ELIGIBLE_FOR_ALL" {
 		slog.Info("Claim status: "+status, "game", it.Campaign.Game.Name)
 	}

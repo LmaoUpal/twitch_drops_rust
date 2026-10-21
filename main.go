@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log/slog"
 	"os"
+	"slices"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -15,6 +16,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+// minimizedFlag starts the app hidden in the tray; the Windows autostart entry passes it.
+const minimizedFlag = "--minimized"
+
 func main() {
 	// Every slog record at Info or above also lands in the in-app Activity log.
 	feed := activity.NewFeed(1000)
@@ -23,16 +27,24 @@ func main() {
 	app := NewApp(feed)
 
 	err := wails.Run(&options.App{
-		Title:     "Twitch Drops Miner",
-		Width:     1100,
-		Height:    720,
-		MinWidth:  860,
-		MinHeight: 560,
+		Title:       "Twitch Drops Miner",
+		Width:       1100,
+		Height:      720,
+		MinWidth:    860,
+		MinHeight:   560,
+		StartHidden: slices.Contains(os.Args[1:], minimizedFlag),
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 15, G: 15, B: 18, A: 1},
 		OnStartup:        app.startup,
+		OnBeforeClose:    app.beforeClose,
+		OnShutdown:       app.shutdown,
+		// A second miner on the same account would fight over the watched channel.
+		SingleInstanceLock: &options.SingleInstanceLock{
+			UniqueId:               "twitch-drops-miner-3f6c1d2e",
+			OnSecondInstanceLaunch: func(options.SecondInstanceData) { app.showWindow() },
+		},
 		Bind: []interface{}{
 			app,
 		},

@@ -1,6 +1,6 @@
 import {useMemo, useState} from 'react';
 import {
-    AudioLines, Bell, Calendar, CircleCheck, ExternalLink, Eye, Gamepad2, Gift, Hourglass, Link, Link2Off,
+    AudioLines, Bell, BellRing, Calendar, CircleCheck, ExternalLink, Eye, Gamepad2, Gift, Hourglass, Link, Link2Off,
     Lock, PackageOpen, Plus, RefreshCw, Search, Timer,
 } from 'lucide-react';
 import {ClaimDrop, RefreshCampaigns, WatchChannel} from '../../wailsjs/go/main/App';
@@ -112,6 +112,15 @@ function LinkStatus({c}: { c: models.Campaign }) {
         : <span className="bad"><Link2Off size={13}/>Account not linked</span>;
 }
 
+/** Turns on "campaign started" notifications; they cover every tracked game. */
+function NotifyButton() {
+    const {settings, updateSettings} = useStore();
+    const on = !!settings?.notify.campaignStarted;
+    return on
+        ? <Button variant="ghost" icon={BellRing} title="You get a desktop notification when tracked campaigns start">Notifying</Button>
+        : <Button icon={Bell} onClick={() => updateSettings(c => { c.notify.campaignStarted = true; })}>Notify me</Button>;
+}
+
 function CampaignCard({c, children, now, watchingLogin}: {
     c: models.Campaign; children: models.Campaign[]; now: number; watchingLogin?: string;
 }) {
@@ -151,7 +160,7 @@ function CampaignCard({c, children, now, watchingLogin}: {
                             <div className="overline">Starts in</div>
                             <div className="mono">{fmtCountdown(Date.parse(c.startAt) - now)}</div>
                         </div>
-                        <Button icon={Bell} disabled title="Notifications arrive in a later update">Notify me</Button>
+                        <NotifyButton/>
                     </>
                 ) : (
                     <Button variant="ghost" icon={ExternalLink} onClick={() => BrowserOpenURL(siteUrl)}>
