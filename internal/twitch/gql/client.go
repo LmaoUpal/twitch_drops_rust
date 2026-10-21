@@ -21,15 +21,18 @@ type Client struct {
 	ClientID  string
 	UserAgent string
 	DeviceID  string
+	SessionID string            // random per app run, sent as Client-Session-Id
+	ClientURL string            // sent as Origin and Referer, e.g. https://android.tv.twitch.tv
 	Token     string            // OAuth access token, without the "OAuth " prefix
 	Hashes    map[string]string // operation name -> persisted query sha256
 	Retries   int               // extra attempts on network errors and 5xx
 }
 
 type request struct {
-	OperationName string     `json:"operationName"`
-	Variables     any        `json:"variables,omitempty"`
-	Extensions    extensions `json:"extensions"`
+	OperationName string      `json:"operationName,omitempty"`
+	Query         string      `json:"query,omitempty"`
+	Variables     any         `json:"variables,omitempty"`
+	Extensions    *extensions `json:"extensions,omitempty"`
 }
 
 type extensions struct {
@@ -65,11 +68,25 @@ func (c *Client) Do(ctx context.Context, op string, vars, out any) error {
 	body, err := json.Marshal(request{
 		OperationName: op,
 		Variables:     vars,
-		Extensions:    extensions{PersistedQuery: persistedQuery{Version: 1, Sha256Hash: hash}},
+		Extensions:    &extensions{PersistedQuery: persistedQuery{Version: 1, Sha256Hash: hash}},
 	})
 	if err != nil {
 		return err
 	}
+	return c.send(ctx, body, out)
+}
+
+// DoQuery runs a raw GraphQL query string. Twitch only accepts these from some clients;
+// it exists for debugging (cmd/probe), production code uses Do.
+func (c *Client) DoQuery(ctx context.Context, query string, vars, out any) error {
+	body, err := json.Marshal(request{Query: query, Variables: vars})
+	if err != nil {
+		return err
+	}
+	return c.send(ctx, body, out)
+}
+
+func (c *Client) send(ctx context.Context, body []byte, out any) error {
 
 	var lastErr error
 	for attempt := 0; attempt <= c.Retries; attempt++ {
@@ -106,6 +123,14 @@ func (c *Client) do(ctx context.Context, body []byte, out any) (retry bool, err 
 	if c.DeviceID != "" {
 		req.Header.Set("X-Device-Id", c.DeviceID)
 	}
+	if c.SessionID != "" {
+		req.Header.Set("Client-Session-Id", c.SessionID)
+	}
+	if c.ClientURL != "" {
+		req.Header.Set("Origin", c.ClientURL)
+		req.Header.Set("Referer", c.ClientURL)
+	}
+	req.Header.Set("Accept-Language", "en-US")
 	if c.Token != "" {
 		req.Header.Set("Authorization", "OAuth "+c.Token)
 	}
