@@ -45,7 +45,8 @@ func (c *Client) StreamInfo(ctx context.Context, login string) (models.Channel, 
 				Game *gqlGame `json:"game"`
 			} `json:"broadcastSettings"`
 			Stream *struct {
-				ViewersCount int `json:"viewersCount"`
+				ID           string `json:"id"`
+				ViewersCount int    `json:"viewersCount"`
 			} `json:"stream"`
 		} `json:"user"`
 	}
@@ -63,6 +64,7 @@ func (c *Client) StreamInfo(ctx context.Context, login string) (models.Channel, 
 	if u.Stream != nil {
 		ch.Online = true
 		ch.Viewers = u.Stream.ViewersCount
+		ch.BroadcastID = u.Stream.ID
 	}
 	return ch, nil
 }
@@ -92,7 +94,8 @@ func (c *Client) GameStreams(ctx context.Context, slug string, limit int) ([]mod
 			Streams struct {
 				Edges []struct {
 					Node struct {
-						ViewersCount int `json:"viewersCount"`
+						ID           string `json:"id"`
+						ViewersCount int    `json:"viewersCount"`
 						Broadcaster  *struct {
 							ID          string `json:"id"`
 							Login       string `json:"login"`
@@ -117,7 +120,7 @@ func (c *Client) GameStreams(ctx context.Context, slug string, limit int) ([]mod
 		}
 		channels = append(channels, models.Channel{
 			ID: b.ID, Login: b.Login, DisplayName: b.DisplayName,
-			Online: true, GameID: out.Game.ID, DropsEnabled: true, Viewers: e.Node.ViewersCount,
+			Online: true, GameID: out.Game.ID, DropsEnabled: true, Viewers: e.Node.ViewersCount, BroadcastID: e.Node.ID,
 		})
 	}
 	return channels, nil
@@ -210,4 +213,43 @@ func (ic inventoryCampaign) model() models.Campaign {
 		c.Drops = append(c.Drops, drop)
 	}
 	return c
+}
+
+// DropSession is the drop currently progressing on a channel for this user.
+type DropSession struct {
+	DropID          string `json:"dropId"`
+	ChannelID       string `json:"channelId"`
+	CurrentMinutes  int    `json:"currentMinutes"`
+	RequiredMinutes int    `json:"requiredMinutes"`
+}
+
+// CurrentDrop reports which drop watching channelID is progressing, if any.
+func (c *Client) CurrentDrop(ctx context.Context, channelID string) (DropSession, error) {
+	var out struct {
+		CurrentUser *struct {
+			DropCurrentSession *struct {
+				Channel *struct {
+					ID string `json:"id"`
+				} `json:"channel"`
+				CurrentMinutesWatched  int    `json:"currentMinutesWatched"`
+				RequiredMinutesWatched int    `json:"requiredMinutesWatched"`
+				DropID                 string `json:"dropID"`
+			} `json:"dropCurrentSession"`
+		} `json:"currentUser"`
+	}
+	if err := c.Do(ctx, "DropCurrentSessionContext", map[string]any{"channelID": channelID, "channelLogin": ""}, &out); err != nil {
+		return DropSession{}, err
+	}
+	if out.CurrentUser == nil {
+		return DropSession{}, ErrUnauthorized
+	}
+	s := out.CurrentUser.DropCurrentSession
+	if s == nil {
+		return DropSession{}, nil
+	}
+	ds := DropSession{DropID: s.DropID, CurrentMinutes: s.CurrentMinutesWatched, RequiredMinutes: s.RequiredMinutesWatched}
+	if s.Channel != nil {
+		ds.ChannelID = s.Channel.ID
+	}
+	return ds, nil
 }

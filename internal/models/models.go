@@ -20,6 +20,7 @@ type Channel struct {
 	GameID       string `json:"gameId"`
 	DropsEnabled bool   `json:"dropsEnabled"`
 	Viewers      int    `json:"viewers"`
+	BroadcastID  string `json:"broadcastId"` // current stream id, empty when offline
 }
 
 type Drop struct {
