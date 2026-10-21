@@ -1,0 +1,141 @@
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"strings"
+	"time"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
+	"github.com/LmaoUpal/twitch_drops_rust/internal/models"
+	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/gql"
+	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/watcher"
+)
+
+const (
+	eventWatch = "watch:status"
+
+	watchIdle     = "idle"
+	watchStarting = "starting"
+	watchActive   = "watching"
+	watchOffline  = "offline"
+	watchError    = "error"
+
+	dropSessionInterval = time.Minute
+)
+
+type WatchState struct {
+	State   string          `json:"state"`
+	Channel models.Channel  `json:"channel"`
+	Status  watcher.Status  `json:"status"`
+	Session gql.DropSession `json:"session"` // what Twitch says this watch is progressing
+	Error   string          `json:"error"`
+}
+
+// GetWatchState returns what is being watched right now.
+func (a *App) GetWatchState() WatchState {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.watch
+}
+
+// WatchChannel stops any current watch and starts watching login.
+func (a *App) WatchChannel(login string) error {
+	login = strings.ToLower(strings.TrimSpace(login))
+	a.StopWatching()
+	a.mu.Lock()
+	tok := a.token
+	a.mu.Unlock()
+	if tok == nil {
+		return errors.New("not logged in")
+	}
+	client := a.gqlClient(tok)
+
+	ctx, cancel := context.WithCancel(a.ctx)
+	a.mu.Lock()
+	a.stopWatch = cancel
+	a.mu.Unlock()
+	a.setWatch(func(s *WatchState) { *s = WatchState{State: watchStarting, Channel: models.Channel{Login: login}} })
+
+	ch, err := client.StreamInfo(ctx, login)
+	if err != nil {
+		cancel()
+		a.setWatch(func(s *WatchState) { s.State, s.Error = watchError, err.Error() })
+		return err
+	}
+	if !ch.Online {
+		cancel()
+		a.setWatch(func(s *WatchState) { s.State, s.Channel = watchOffline, ch })
+		return nil
+	}
+	a.setWatch(func(s *WatchState) { s.State, s.Channel = watchActive, ch })
+
+	w := &watcher.Watcher{
+		GQL: client, UserID: tok.UserID, UserAgent: a.cfg.Twitch.UserAgent,
+		Report: func(st watcher.Status) {
+			if ctx.Err() == nil { // a stopped watch must not overwrite the next state
+				a.setWatch(func(s *WatchState) { s.Status = st })
+			}
+		},
+	}
+	go a.trackDropSession(ctx, client, ch.ID)
+	go func() {
+		err := w.Watch(ctx, watcher.Stream{Channel: ch})
+		switch {
+		case errors.Is(err, context.Canceled):
+		case errors.Is(err, watcher.ErrOffline):
+			slog.Info("channel went offline", "channel", login)
+			a.setWatch(func(s *WatchState) { s.State = watchOffline })
+		default:
+			slog.Warn("watch", "channel", login, "err", err)
+			a.setWatch(func(s *WatchState) { s.State, s.Error = watchError, err.Error() })
+		}
+		cancel()
+	}()
+	return nil
+}
+
+// StopWatching stops the current watch, if any.
+func (a *App) StopWatching() {
+	a.mu.Lock()
+	stop := a.stopWatch
+	a.stopWatch = nil
+	a.mu.Unlock()
+	if stop != nil {
+		stop()
+		a.setWatch(func(s *WatchState) { *s = WatchState{State: watchIdle} })
+	}
+}
+
+// trackDropSession polls which drop the watch progresses until ctx ends.
+func (a *App) trackDropSession(ctx context.Context, client *gql.Client, channelID string) {
+	t := time.NewTicker(dropSessionInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+		s, err := client.CurrentDrop(ctx, channelID)
+		if err != nil {
+			if ctx.Err() == nil {
+				slog.Warn("current drop", "err", err)
+			}
+			continue
+		}
+		if ctx.Err() == nil {
+			a.setWatch(func(st *WatchState) { st.Session = s })
+		}
+	}
+}
+
+func (a *App) setWatch(update func(*WatchState)) {
+	a.mu.Lock()
+	update(&a.watch)
+	s := a.watch
+	a.mu.Unlock()
+	runtime.EventsEmit(a.ctx, eventWatch, s)
+}

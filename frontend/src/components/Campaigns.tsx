@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react';
 import {GetCampaigns, RefreshCampaigns} from "../../wailsjs/go/main/App";
 import {catalog, models} from "../../wailsjs/go/models";
 import {BrowserOpenURL, EventsOn} from "../../wailsjs/runtime/runtime";
+import {watch} from "./Watching";
 
 const ZERO_TIME = '0001-01-01T00:00:00Z';
 
@@ -67,6 +68,7 @@ function CampaignCard({c, now}: { c: models.Campaign, now: number }) {
                             <span className={`dot ${ch.online ? 'on' : ''}`}/>
                             <a href="#" onClick={() => BrowserOpenURL(`https://www.twitch.tv/${ch.login}`)}>{ch.displayName || ch.login}</a>
                             {ch.online && <span className="muted"> {ch.viewers}</span>}
+                            {ch.online && <button className="btn secondary small" onClick={() => watch(ch.login)}>Watch</button>}
                         </span>
                     ))}
                 </div>

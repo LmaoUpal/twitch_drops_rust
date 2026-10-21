@@ -99,6 +99,29 @@ export namespace config {
 
 }
 
+export namespace gql {
+	
+	export class DropSession {
+	    dropId: string;
+	    channelId: string;
+	    currentMinutes: number;
+	    requiredMinutes: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new DropSession(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.dropId = source["dropId"];
+	        this.channelId = source["channelId"];
+	        this.currentMinutes = source["currentMinutes"];
+	        this.requiredMinutes = source["requiredMinutes"];
+	    }
+	}
+
+}
+
 export namespace main {
 	
 	export class AuthStatus {
@@ -132,6 +155,44 @@ export namespace main {
 	        this.verificationUri = source["verificationUri"];
 	        this.expiresIn = source["expiresIn"];
 	    }
+	}
+	export class WatchState {
+	    state: string;
+	    channel: models.Channel;
+	    status: watcher.Status;
+	    session: gql.DropSession;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new WatchState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.channel = this.convertValues(source["channel"], models.Channel);
+	        this.status = this.convertValues(source["status"], watcher.Status);
+	        this.session = this.convertValues(source["session"], gql.DropSession);
+	        this.error = source["error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }
@@ -196,6 +257,7 @@ export namespace models {
 	    gameId: string;
 	    dropsEnabled: boolean;
 	    viewers: number;
+	    broadcastId: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Channel(source);
@@ -210,6 +272,7 @@ export namespace models {
 	        this.gameId = source["gameId"];
 	        this.dropsEnabled = source["dropsEnabled"];
 	        this.viewers = source["viewers"];
+	        this.broadcastId = source["broadcastId"];
 	    }
 	}
 	export class Game {
@@ -280,6 +343,48 @@ export namespace models {
 	}
 	
 	
+
+}
+
+export namespace watcher {
+	
+	export class Status {
+	    segments: number;
+	    spadeEvents: number;
+	    // Go type: time
+	    lastPoll: any;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Status(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.segments = source["segments"];
+	        this.spadeEvents = source["spadeEvents"];
+	        this.lastPoll = this.convertValues(source["lastPoll"], null);
+	        this.error = source["error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 
 }
 

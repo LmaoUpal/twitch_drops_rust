@@ -5,6 +5,7 @@ import {config, main} from "../wailsjs/go/models";
 import {EventsOn} from "../wailsjs/runtime/runtime";
 import Login from "./components/Login";
 import Campaigns from "./components/Campaigns";
+import Watching from "./components/Watching";
 
 function App() {
     const [cfg, setCfg] = useState<config.Config | null>(null);
@@ -39,6 +40,7 @@ function App() {
                                 {cfg?.games?.map(g => <li key={g}>{g}</li>)}
                             </ol>
                         </section>
+                        <Watching/>
                         <Campaigns/>
                     </>
                 )}

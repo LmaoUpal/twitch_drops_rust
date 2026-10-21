@@ -12,6 +12,8 @@ export function GetCampaigns():Promise<catalog.Snapshot>;
 
 export function GetConfig():Promise<config.Config>;
 
+export function GetWatchState():Promise<main.WatchState>;
+
 export function Logout():Promise<void>;
 
 export function RefreshCampaigns():Promise<void>;
@@ -21,3 +23,7 @@ export function Restore():Promise<void>;
 export function SetGames(arg1:Array<string>):Promise<void>;
 
 export function StartLogin():Promise<main.LoginPrompt>;
+
+export function StopWatching():Promise<void>;
+
+export function WatchChannel(arg1:string):Promise<void>;

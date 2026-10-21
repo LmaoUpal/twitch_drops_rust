@@ -18,6 +18,10 @@ export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
 
+export function GetWatchState() {
+  return window['go']['main']['App']['GetWatchState']();
+}
+
 export function Logout() {
   return window['go']['main']['App']['Logout']();
 }
@@ -36,4 +40,12 @@ export function SetGames(arg1) {
 
 export function StartLogin() {
   return window['go']['main']['App']['StartLogin']();
+}
+
+export function StopWatching() {
+  return window['go']['main']['App']['StopWatching']();
+}
+
+export function WatchChannel(arg1) {
+  return window['go']['main']['App']['WatchChannel'](arg1);
 }

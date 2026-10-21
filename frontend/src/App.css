@@ -182,3 +182,16 @@ a {
     height: 100%;
     background: #9146ff;
 }
+
+.input {
+    background-color: #2a3446;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: inherit;
+    font: inherit;
+    padding: 6px 10px;
+}
+
+.row {
+    align-items: center;
+}

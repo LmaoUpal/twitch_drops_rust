@@ -61,10 +61,13 @@ type App struct {
 	stopLoop     context.CancelFunc
 	refreshNow   chan struct{}
 	loopForToken string // access token the running campaign loop uses
+
+	watch     WatchState
+	stopWatch context.CancelFunc
 }
 
 func NewApp() *App {
-	return &App{cfg: config.Default(), status: AuthStatus{State: authChecking}}
+	return &App{cfg: config.Default(), status: AuthStatus{State: authChecking}, watch: WatchState{State: watchIdle}}
 }
 
 // startup is called when the app starts. The context is saved
@@ -193,6 +196,7 @@ func (a *App) setStatus(s AuthStatus, tok *auth.Token) {
 	case s.State == authLoggedIn && tok != nil:
 		a.startCampaignLoop(tok)
 	case s.State == authLoggedOut:
+		a.StopWatching()
 		a.stopCampaignLoop()
 	}
 }
