@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,6 +34,7 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	}
 	cfg.Games = cleanList(cfg.Games, false)
 	cfg.ExcludedChannels = cleanList(cfg.ExcludedChannels, true)
+	cfg.PreferredChannels = cleanQueues(cfg.PreferredChannels, cfg.Games)
 	if cfg.Twitch.Hashes == nil {
 		cfg.Twitch.Hashes = map[string]string{}
 	}
@@ -54,6 +56,7 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	cfg.AutoMode = a.cfg.AutoMode // owned by SetAutoMode; the UI copy may be stale
 	gamesChanged := !slices.Equal(cfg.Games, a.cfg.Games)
 	langChanged := cfg.Language != a.cfg.Language
+	queuesChanged := !maps.EqualFunc(cfg.PreferredChannels, a.cfg.PreferredChannels, slices.Equal)
 	a.cfg = cfg
 	path := a.cfgPath
 	a.mu.Unlock()
@@ -69,6 +72,10 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	if gamesChanged {
 		slog.Info("Game priority updated: "+strings.Join(cfg.Games, ", "), "tag", "Settings")
 		a.RefreshCampaigns()
+	}
+	if queuesChanged && !gamesChanged {
+		slog.Info("Streamer queue updated", "tag", "Settings")
+		a.kickAuto()
 	}
 	return nil
 }
@@ -125,6 +132,22 @@ func ActivityText(entries []activity.Entry) string {
 }
 
 // cleanList trims entries and drops blanks and duplicates (case-insensitive).
+// cleanQueues keeps streamer queues of wanted games only, keyed by the game's name as spelled
+// in games, with clean logins; empty queues are dropped.
+func cleanQueues(in map[string][]string, games []string) map[string][]string {
+	out := map[string][]string{}
+	for g, logins := range in {
+		for _, want := range games {
+			if strings.EqualFold(g, want) {
+				if l := cleanList(append(out[want], logins...), true); len(l) > 0 {
+					out[want] = l
+				}
+			}
+		}
+	}
+	return out
+}
+
 func cleanList(in []string, lower bool) []string {
 	out := []string{}
 	seen := map[string]bool{}

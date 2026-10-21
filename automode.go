@@ -27,6 +27,8 @@ const (
 	exploreDuration = 10 * time.Minute // how long to watch a game with no known campaign
 	exploreCooldown = 6 * time.Hour    // before exploring the same game again
 	streamsPerGame  = 30
+	verifyAfter     = 4 * time.Minute  // a queued channel must show drop progress by then
+	noDropsTTL      = 30 * time.Minute // a queued channel without drop progress is skipped this long
 )
 
 type QueueItem struct {
@@ -65,6 +67,10 @@ type autoRun struct {
 	exploreUntil time.Time
 	claimed      map[string]bool      // claim instance ids already attempted
 	skip         map[string]time.Time // channels that turned out offline, ignored for liveCacheTTL
+	// unverified holds queued channels found only by login: Twitch doesn't say whether their
+	// stream has drops enabled, so the watch is checked for drop progress after verifyAfter.
+	unverified map[string]bool
+	noDrops    map[string]time.Time // queued channels whose watch showed no drop progress
 }
 
 // GetAutoState returns the auto-mode status for the UI.
@@ -172,12 +178,14 @@ func (a *App) startAutoLoop(ctx context.Context, tok *auth.Token) {
 	a.setMode(auto)
 
 	run := &autoRun{
-		client:   a.gqlClient(tok),
-		channels: map[string]cached[models.Channel]{},
-		streams:  map[string]cached[[]models.Channel]{},
-		explored: map[string]time.Time{},
-		claimed:  map[string]bool{},
-		skip:     map[string]time.Time{},
+		client:     a.gqlClient(tok),
+		channels:   map[string]cached[models.Channel]{},
+		streams:    map[string]cached[[]models.Channel]{},
+		explored:   map[string]time.Time{},
+		claimed:    map[string]bool{},
+		skip:       map[string]time.Time{},
+		unverified: map[string]bool{},
+		noDrops:    map[string]time.Time{},
 	}
 	go func() {
 		for {
@@ -228,13 +236,14 @@ func (a *App) autoStep(ctx context.Context, run *autoRun) {
 	}
 
 	now := time.Now()
-	prefs := scheduler.Prefs{Games: cfg.Games, ExcludedChannels: cfg.ExcludedChannels}
+	prefs := scheduler.Prefs{Games: cfg.Games, ExcludedChannels: cfg.ExcludedChannels, Preferred: cfg.PreferredChannels}
 	live, lastErr := a.liveChannels(ctx, run, snap.Campaigns, prefs, now)
-	live = run.withoutSkipped(live, now)
 
 	watch := a.GetWatchState()
+	run.verifyDrops(watch, now)
+	live = run.withoutSkipped(live, now)
 	var current *models.Channel
-	if watch.State == watchActive || watch.State == watchStarting {
+	if (watch.State == watchActive || watch.State == watchStarting) && !run.hasNoDrops(watch.Channel.Login, now) {
 		ch := watch.Channel
 		if fresh, err := run.channel(ctx, ch.Login, now); err == nil {
 			ch.GameID, ch.Online = fresh.GameID, fresh.Online
@@ -264,7 +273,7 @@ func (a *App) autoStep(ctx context.Context, run *autoRun) {
 		if game, ch := a.pickExplore(ctx, run, snap.Campaigns, prefs, now); ch != nil {
 			run.exploreGame, run.exploreUntil = game, now.Add(exploreDuration)
 			a.autoWatch(run, ch.Login, "exploring "+game, &lastErr)
-		} else if current != nil {
+		} else if watch.State == watchActive || watch.State == watchStarting {
 			slog.Info("Nothing left to watch", "tag", "App")
 			a.stopWatching()
 		}
@@ -310,7 +319,54 @@ func (a *App) liveChannels(ctx context.Context, run *autoRun, campaigns []models
 		}
 		live = append(live, streams...)
 	}
+	// Queued channels go last: one already listed above keeps its drops-enabled entry
+	// (scheduler takes the first occurrence of a login).
+	listed := map[string]bool{}
+	for _, ch := range live {
+		listed[strings.ToLower(ch.Login)] = true
+	}
+	seenGame := map[string]bool{}
+	for _, c := range scheduler.Eligible(now, campaigns, prefs) {
+		if seenGame[c.Game.ID] {
+			continue
+		}
+		seenGame[c.Game.ID] = true
+		for _, login := range scheduler.Queue(prefs, c.Game.Name) {
+			key := strings.ToLower(login)
+			if listed[key] {
+				continue
+			}
+			fresh, err := run.channel(ctx, login, now)
+			if err != nil {
+				lastErr = err.Error()
+				continue
+			}
+			listed[key] = true
+			fresh.DropsEnabled = true
+			run.unverified[key] = true
+			live = append(live, fresh)
+		}
+	}
 	return live, lastErr
+}
+
+// verifyDrops checks the watch of a queued channel that wasn't listed as drops-enabled:
+// without drop progress after verifyAfter its stream has no drops, so it is skipped for a while.
+func (r *autoRun) verifyDrops(w WatchState, now time.Time) {
+	key := strings.ToLower(w.Channel.Login)
+	if w.State != watchActive || !r.unverified[key] || now.Sub(w.Started) < verifyAfter {
+		return
+	}
+	delete(r.unverified, key)
+	if w.Session.DropID == "" {
+		slog.Warn("No drop progress on "+w.Channel.DisplayName+": drops seem disabled on this stream, skipping it for now", "channel", w.Channel.DisplayName)
+		r.noDrops[key] = now
+	}
+}
+
+func (r *autoRun) hasNoDrops(login string, now time.Time) bool {
+	t, ok := r.noDrops[strings.ToLower(login)]
+	return ok && now.Sub(t) < noDropsTTL
 }
 
 // pickExplore returns a wanted game with no known campaign and a live drops stream of it.
@@ -398,6 +454,9 @@ func (r *autoRun) withoutSkipped(live []models.Channel, now time.Time) []models.
 	out := live[:0:0]
 	for _, ch := range live {
 		if t, ok := r.skip[strings.ToLower(ch.Login)]; ok && now.Sub(t) < liveCacheTTL {
+			continue
+		}
+		if r.hasNoDrops(ch.Login, now) {
 			continue
 		}
 		out = append(out, ch)
