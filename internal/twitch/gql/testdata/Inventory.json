@@ -1,0 +1,9 @@
+{"data":{"currentUser":{"id":"1020370763","inventory":{"dropCampaignsInProgress":[
+ {"id":"camp-general","name":"Rust Drops 54","status":"ACTIVE","startAt":"2026-10-23T18:00:00Z","endAt":"2026-11-01T23:59:00Z","accountLinkURL":"https://twitch.facepunch.com/connect","game":{"id":"263490","displayName":"Rust","slug":"rust"},"self":{"isAccountConnected":true},"allow":{"isEnabled":false,"channels":null},
+  "timeBasedDrops":[
+   {"id":"drop-rug","name":"Rug","startAt":"2026-10-23T18:00:00Z","endAt":"2026-11-01T23:59:00Z","requiredMinutesWatched":60,"benefitEdges":[{"benefit":{"id":"b1","name":"Rug"}}],"self":{"currentMinutesWatched":60,"isClaimed":true,"dropInstanceID":""}},
+   {"id":"drop-bed","name":"Bed","startAt":"2026-10-23T18:00:00Z","endAt":"2026-11-01T23:59:00Z","requiredMinutesWatched":120,"benefitEdges":[{"benefit":{"id":"b2","name":"Bed"}}],"self":{"currentMinutesWatched":75,"isClaimed":false,"dropInstanceID":""}}]},
+ {"id":"camp-rivals","name":"TwitchRivals Backpack","status":"ACTIVE","startAt":"2026-10-23T18:00:00Z","endAt":"2026-11-01T23:59:00Z","game":{"id":"263490","displayName":"Rust"},"self":{"isAccountConnected":false},"allow":{"isEnabled":true,"channels":[{"id":"197886470","name":"twitchrivals","displayName":"TwitchRivals"}]},
+  "timeBasedDrops":[{"id":"drop-backpack","name":"Backpack","startAt":"2026-10-23T18:00:00Z","endAt":"2026-11-01T23:59:00Z","requiredMinutesWatched":30,"benefitEdges":[],"self":{"currentMinutesWatched":30,"isClaimed":false,"dropInstanceID":"inst-1"}}]},
+ {"id":"no-game","name":"broken","game":null,"timeBasedDrops":[]}
+],"gameEventDrops":[]}}}}
