@@ -7,18 +7,20 @@ import (
 
 	"github.com/LmaoUpal/twitch_drops_rust/internal/facepunch"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/models"
+	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/gql"
 )
 
 // Twitch is the part of the GQL client Load needs.
 type Twitch interface {
-	Inventory(ctx context.Context) ([]models.Campaign, error)
+	Inventory(ctx context.Context) (gql.Inventory, error)
 	StreamInfo(ctx context.Context, login string) (models.Channel, error)
 }
 
 type Snapshot struct {
-	Campaigns []models.Campaign `json:"campaigns"`
-	UpdatedAt time.Time         `json:"updatedAt"`
-	Warnings  []string          `json:"warnings"` // non-fatal source failures
+	Campaigns []models.Campaign    `json:"campaigns"`
+	Claimed   []models.ClaimedDrop `json:"claimed"`
+	UpdatedAt time.Time            `json:"updatedAt"`
+	Warnings  []string             `json:"warnings"` // non-fatal source failures
 }
 
 // Load gathers campaigns from the Twitch inventory and, when withRust is set, the
@@ -26,10 +28,12 @@ type Snapshot struct {
 // Only an inventory failure is an error; other sources degrade to warnings.
 func Load(ctx context.Context, tw Twitch, fetchFacepunch func(context.Context) ([]facepunch.Campaign, error), withRust bool) (Snapshot, error) {
 	snap := Snapshot{UpdatedAt: time.Now()}
-	inventory, err := tw.Inventory(ctx)
+	inv, err := tw.Inventory(ctx)
 	if err != nil {
 		return snap, fmt.Errorf("inventory: %w", err)
 	}
+	inventory := inv.Campaigns
+	snap.Claimed = inv.Claimed
 
 	var fromFacepunch []models.Campaign
 	if withRust {

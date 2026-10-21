@@ -21,6 +21,9 @@ type Channel struct {
 	DropsEnabled bool   `json:"dropsEnabled"`
 	Viewers      int    `json:"viewers"`
 	BroadcastID  string `json:"broadcastId"` // current stream id, empty when offline
+	Title        string `json:"title"`
+	GameName     string `json:"gameName"`
+	AvatarURL    string `json:"avatarUrl"`
 }
 
 type Drop struct {
@@ -39,6 +42,16 @@ type Drop struct {
 // Active reports whether the drop can still progress at time now.
 func (d Drop) Active(now time.Time) bool {
 	return !d.Claimed && !now.Before(d.StartAt) && now.Before(d.EndAt)
+}
+
+// ClaimedDrop is a reward already granted to the account.
+type ClaimedDrop struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Game      Game      `json:"game"`
+	ImageURL  string    `json:"imageUrl"`
+	ClaimedAt time.Time `json:"claimedAt"`
+	Count     int       `json:"count"`
 }
 
 type Campaign struct {

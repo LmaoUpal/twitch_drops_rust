@@ -7,30 +7,55 @@ import (
 	"github.com/LmaoUpal/twitch_drops_rust/internal/models"
 )
 
-// Inventory returns campaigns the user already has progress in, with per-drop progress.
-// It is the only campaign query Twitch still answers for app clients.
-func (c *Client) Inventory(ctx context.Context) ([]models.Campaign, error) {
+// Inventory is what Twitch reports for the account: campaigns with progress and claimed rewards.
+type Inventory struct {
+	Campaigns []models.Campaign
+	Claimed   []models.ClaimedDrop
+}
+
+// Inventory returns campaigns the user already has progress in, with per-drop progress,
+// and rewards already claimed. It is the only campaign query Twitch still answers for app clients.
+func (c *Client) Inventory(ctx context.Context) (Inventory, error) {
 	var out struct {
 		CurrentUser *struct {
 			Inventory struct {
 				DropCampaignsInProgress []inventoryCampaign `json:"dropCampaignsInProgress"`
+				GameEventDrops          []gameEventDrop     `json:"gameEventDrops"`
 			} `json:"inventory"`
 		} `json:"currentUser"`
 	}
 	if err := c.Do(ctx, "Inventory", map[string]any{"fetchRewardCampaigns": false}, &out); err != nil {
-		return nil, err
+		return Inventory{}, err
 	}
 	if out.CurrentUser == nil {
-		return nil, ErrUnauthorized
+		return Inventory{}, ErrUnauthorized
 	}
-	campaigns := make([]models.Campaign, 0, len(out.CurrentUser.Inventory.DropCampaignsInProgress))
+	inv := Inventory{Campaigns: []models.Campaign{}, Claimed: []models.ClaimedDrop{}}
 	for _, ic := range out.CurrentUser.Inventory.DropCampaignsInProgress {
 		if ic.Game == nil {
 			continue
 		}
-		campaigns = append(campaigns, ic.model())
+		inv.Campaigns = append(inv.Campaigns, ic.model())
 	}
-	return campaigns, nil
+	for _, g := range out.CurrentUser.Inventory.GameEventDrops {
+		d := models.ClaimedDrop{ID: g.ID, Name: g.Name, ImageURL: g.ImageURL, ClaimedAt: g.LastAwardedAt, Count: g.TotalCount}
+		if g.Game != nil {
+			d.Game = g.Game.model()
+		}
+		inv.Claimed = append(inv.Claimed, d)
+	}
+	return inv, nil
+}
+
+// gameEventDrop mirrors Inventory.gameEventDrops[]; field names follow TwitchDropsMiner and
+// are not yet seen live (the account had none on 2026-10-21).
+type gameEventDrop struct {
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	ImageURL      string    `json:"imageURL"`
+	LastAwardedAt time.Time `json:"lastAwardedAt"`
+	TotalCount    int       `json:"totalCount"`
+	Game          *gqlGame  `json:"game"`
 }
 
 // StreamInfo returns a channel's identity, current category and live state.
@@ -41,8 +66,10 @@ func (c *Client) StreamInfo(ctx context.Context, login string) (models.Channel, 
 			ID                string `json:"id"`
 			Login             string `json:"login"`
 			DisplayName       string `json:"displayName"`
+			ProfileImageURL   string `json:"profileImageURL"`
 			BroadcastSettings struct {
-				Game *gqlGame `json:"game"`
+				Title string   `json:"title"`
+				Game  *gqlGame `json:"game"`
 			} `json:"broadcastSettings"`
 			Stream *struct {
 				ID           string `json:"id"`
@@ -57,9 +84,9 @@ func (c *Client) StreamInfo(ctx context.Context, login string) (models.Channel, 
 		return models.Channel{Login: login}, nil // no such channel
 	}
 	u := out.User
-	ch := models.Channel{ID: u.ID, Login: u.Login, DisplayName: u.DisplayName}
+	ch := models.Channel{ID: u.ID, Login: u.Login, DisplayName: u.DisplayName, AvatarURL: u.ProfileImageURL, Title: u.BroadcastSettings.Title}
 	if g := u.BroadcastSettings.Game; g != nil {
-		ch.GameID = g.ID
+		ch.GameID, ch.GameName = g.ID, g.model().Name
 	}
 	if u.Stream != nil {
 		ch.Online = true
@@ -90,16 +117,19 @@ func (c *Client) GameStreams(ctx context.Context, slug string, limit int) ([]mod
 	}
 	var out struct {
 		Game *struct {
-			ID      string `json:"id"`
-			Streams struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"displayName"`
+			Streams     struct {
 				Edges []struct {
 					Node struct {
 						ID           string `json:"id"`
+						Title        string `json:"title"`
 						ViewersCount int    `json:"viewersCount"`
 						Broadcaster  *struct {
-							ID          string `json:"id"`
-							Login       string `json:"login"`
-							DisplayName string `json:"displayName"`
+							ID              string `json:"id"`
+							Login           string `json:"login"`
+							DisplayName     string `json:"displayName"`
+							ProfileImageURL string `json:"profileImageURL"`
 						} `json:"broadcaster"`
 					} `json:"node"`
 				} `json:"edges"`
@@ -121,6 +151,7 @@ func (c *Client) GameStreams(ctx context.Context, slug string, limit int) ([]mod
 		channels = append(channels, models.Channel{
 			ID: b.ID, Login: b.Login, DisplayName: b.DisplayName,
 			Online: true, GameID: out.Game.ID, DropsEnabled: true, Viewers: e.Node.ViewersCount, BroadcastID: e.Node.ID,
+			Title: e.Node.Title, GameName: out.Game.DisplayName, AvatarURL: b.ProfileImageURL,
 		})
 	}
 	return channels, nil

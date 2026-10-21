@@ -27,9 +27,13 @@ func fixtureClient(t *testing.T) *Client {
 }
 
 func TestInventory(t *testing.T) {
-	got, err := fixtureClient(t).Inventory(context.Background())
+	inv, err := fixtureClient(t).Inventory(context.Background())
 	if err != nil {
 		t.Fatal(err)
+	}
+	got := inv.Campaigns
+	if len(inv.Claimed) != 1 || inv.Claimed[0].Name != "Rust Hoodie" || inv.Claimed[0].Game.Name != "Rust" || inv.Claimed[0].ClaimedAt.IsZero() {
+		t.Errorf("claimed: %+v", inv.Claimed)
 	}
 	if len(got) != 2 {
 		t.Fatalf("want 2 campaigns (game-less one dropped), got %d", len(got))
@@ -57,7 +61,7 @@ func TestStreamInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ch.ID != "218217900" || ch.Login != "filliolina" || !ch.Online || ch.Viewers != 53 || ch.GameID != "1264310518" {
+	if ch.ID != "218217900" || ch.Login != "filliolina" || !ch.Online || ch.Viewers != 53 || ch.GameID != "1264310518" || ch.GameName != "Marvel Rivals" || ch.AvatarURL == "" || ch.Title == "" {
 		t.Fatalf("got %+v", ch)
 	}
 }
