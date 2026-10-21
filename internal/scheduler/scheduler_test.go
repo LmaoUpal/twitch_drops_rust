@@ -76,3 +76,35 @@ func TestPick(t *testing.T) {
 		})
 	}
 }
+
+func TestRankOrderReasonsAndMinutesLeft(t *testing.T) {
+	end := now.Add(7 * 24 * time.Hour)
+	general := campaign("rust-general", rust, nil, end)
+	general.Drops = []models.Drop{
+		{ID: "rug", RequiredMinutes: 60, CurrentMinutes: 60, StartAt: now.Add(-time.Hour), EndAt: end}, // done, unclaimed
+		{ID: "bed", RequiredMinutes: 120, CurrentMinutes: 100, StartAt: now.Add(-time.Hour), EndAt: end},
+	}
+	streamer := campaign("rust-rivals", rust, []models.Channel{rivals}, end)
+	got := Rank(now, []models.Campaign{general, streamer}, []models.Channel{smallRust, bigRust, rivals, bigRust}, Prefs{Games: []string{"Rust"}})
+	if len(got) != 3 {
+		t.Fatalf("want 3 unique channels, got %d", len(got))
+	}
+	if got[0].Channel.Login != "twitchrivals" || got[0].Reason != "streamer drop" {
+		t.Fatalf("first: %s %s", got[0].Channel.Login, got[0].Reason)
+	}
+	if got[1].Channel.Login != "bigrust" || got[1].Reason != "general drops" || got[1].MinutesLeft != 20 {
+		t.Fatalf("second: %+v", got[1])
+	}
+	if !Better(got[0], got[1]) || Better(got[1], got[2]) || Better(got[2], got[1]) {
+		t.Fatal("Better: streamer beats general; general vs general never switches")
+	}
+}
+
+func TestEligibleSkipsCompletedDrops(t *testing.T) {
+	end := now.Add(time.Hour)
+	c := campaign("done", rust, nil, end)
+	c.Drops[0].CurrentMinutes = c.Drops[0].RequiredMinutes // complete but not claimed yet
+	if len(Eligible(now, []models.Campaign{c}, Prefs{})) != 0 {
+		t.Fatal("campaign whose drops are complete needs no more watching")
+	}
+}

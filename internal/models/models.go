@@ -44,6 +44,16 @@ func (d Drop) Active(now time.Time) bool {
 	return !d.Claimed && !now.Before(d.StartAt) && now.Before(d.EndAt)
 }
 
+// NeedsWatch reports whether watching still earns progress toward this drop.
+func (d Drop) NeedsWatch(now time.Time) bool {
+	return d.Active(now) && (d.RequiredMinutes == 0 || d.CurrentMinutes < d.RequiredMinutes)
+}
+
+// Claimable reports whether the drop is complete and Twitch has issued an instance to claim.
+func (d Drop) Claimable() bool {
+	return !d.Claimed && d.InstanceID != "" && d.RequiredMinutes > 0 && d.CurrentMinutes >= d.RequiredMinutes
+}
+
 // ClaimedDrop is a reward already granted to the account.
 type ClaimedDrop struct {
 	ID        string    `json:"id"`
@@ -84,6 +94,30 @@ func (c Campaign) Active(now time.Time) bool {
 		}
 	}
 	return false
+}
+
+// NeedsWatch reports whether the campaign is running and some drop still needs watch time.
+func (c Campaign) NeedsWatch(now time.Time) bool {
+	if now.Before(c.StartAt) || !now.Before(c.EndAt) {
+		return false
+	}
+	for _, d := range c.Drops {
+		if d.NeedsWatch(now) {
+			return true
+		}
+	}
+	return false
+}
+
+// MinutesLeft is the smallest remaining watch time over drops that still need watching, or -1.
+func (c Campaign) MinutesLeft(now time.Time) int {
+	left := -1
+	for _, d := range c.Drops {
+		if d.NeedsWatch(now) && (left < 0 || d.RequiredMinutes-d.CurrentMinutes < left) {
+			left = d.RequiredMinutes - d.CurrentMinutes
+		}
+	}
+	return left
 }
 
 // Allows reports whether watching ch progresses this campaign.
