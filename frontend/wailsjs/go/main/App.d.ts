@@ -15,6 +15,8 @@ export function ExportActivity():Promise<string>;
 
 export function GetActivity():Promise<Array<activity.Entry>>;
 
+export function GetAllDrops(arg1:boolean):Promise<main.AllDrops>;
+
 export function GetAuthStatus():Promise<main.AuthStatus>;
 
 export function GetAutoState():Promise<main.AutoState>;

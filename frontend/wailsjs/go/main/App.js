@@ -22,6 +22,10 @@ export function GetActivity() {
   return window['go']['main']['App']['GetActivity']();
 }
 
+export function GetAllDrops(arg1) {
+  return window['go']['main']['App']['GetAllDrops'](arg1);
+}
+
 export function GetAuthStatus() {
   return window['go']['main']['App']['GetAuthStatus']();
 }

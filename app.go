@@ -78,6 +78,8 @@ type App struct {
 	notifyReady    bool
 	seenActive     map[string]bool // campaign ids already active, for "campaign started"
 	warnedUnlinked map[string]bool
+
+	allDrops AllDrops // cached community catalog for the All drops tab
 }
 
 func NewApp(feed *activity.Feed) *App {

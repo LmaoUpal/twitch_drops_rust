@@ -1,4 +1,4 @@
-import {ChevronsUpDown, Gift, LayoutDashboard, LucideIcon, Package, Pickaxe, ScrollText, Settings} from 'lucide-react';
+import {ChevronsUpDown, Compass, Gift, LayoutDashboard, LucideIcon, Package, Pickaxe, ScrollText, Settings} from 'lucide-react';
 import {Page, useStore} from '../store';
 import {campaignPhase, findDrop, isRust} from '../lib/derive';
 import {fmtCountdown, fmtMinutes, isSet} from '../lib/format';
@@ -82,6 +82,7 @@ export function Sidebar() {
             </div>
             <NavItem page="dashboard" icon={LayoutDashboard} label={t('nav.dashboard')}/>
             <NavItem page="campaigns" icon={Gift} label={t('nav.campaigns')} count={activeCount}/>
+            <NavItem page="drops" icon={Compass} label={t('nav.allDrops')}/>
             <NavItem page="inventory" icon={Package} label={t('nav.inventory')}/>
             <NavItem page="activity" icon={ScrollText} label={t('nav.activity')}/>
             <div className="grow"/>

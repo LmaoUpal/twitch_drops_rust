@@ -5,6 +5,7 @@ import {t} from './i18n';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Campaigns from './pages/Campaigns';
+import AllDrops from './pages/AllDrops';
 import Inventory from './pages/Inventory';
 import Settings from './pages/Settings';
 import Activity from './pages/Activity';
@@ -28,6 +29,7 @@ function Shell() {
             <main className="main">
                 {page === 'dashboard' && <Dashboard/>}
                 {page === 'campaigns' && <Campaigns/>}
+                {page === 'drops' && <AllDrops/>}
                 {page === 'inventory' && <Inventory/>}
                 {page === 'activity' && <Activity/>}
                 {page === 'settings' && <Settings/>}

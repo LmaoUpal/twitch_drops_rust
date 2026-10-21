@@ -4,7 +4,7 @@ import {activity, catalog, config, main} from "../wailsjs/go/models";
 import {EventsOn} from "../wailsjs/runtime/runtime";
 import {setLang} from "./i18n";
 
-export type Page = 'dashboard' | 'campaigns' | 'inventory' | 'activity' | 'settings';
+export type Page = 'dashboard' | 'campaigns' | 'drops' | 'inventory' | 'activity' | 'settings';
 
 interface Store {
     auth: main.AuthStatus;
