@@ -63,6 +63,7 @@ func (a *App) startCampaignLoop(tok *auth.Token) {
 	a.mu.Unlock()
 
 	client := a.gqlClient(tok)
+	a.startAutoLoop(ctx, tok)
 	go func() {
 		a.loadProfile(ctx, client, tok.Login)
 		for {
@@ -83,7 +84,7 @@ func (a *App) stopCampaignLoop() {
 	if a.stopLoop != nil {
 		a.stopLoop()
 	}
-	a.stopLoop, a.refreshNow, a.loopForToken = nil, nil, ""
+	a.stopLoop, a.refreshNow, a.loopForToken, a.autoKick = nil, nil, "", nil
 	a.campaigns = catalog.Snapshot{}
 }
 
@@ -110,6 +111,7 @@ func (a *App) loadCampaigns(ctx context.Context, client *gql.Client) {
 	a.campaigns = snap
 	a.mu.Unlock()
 	runtime.EventsEmit(a.ctx, eventCampaigns, snap)
+	a.kickAuto()
 }
 
 // loadProfile fills in the signed-in user's avatar for the UI.
@@ -178,7 +180,11 @@ func (a *App) ensureDeviceID() {
 	if a.cfgPath == "" {
 		return
 	}
-	if err := config.Save(a.cfgPath, a.cfg); err != nil {
-		slog.Error("save config", "err", err)
+	saveConfig(a.cfgPath, a.cfg)
+}
+
+func saveConfig(path string, cfg config.Config) {
+	if err := config.Save(path, cfg); err != nil {
+		slog.Error("Couldn't save settings", "tag", "Settings", "err", err)
 	}
 }

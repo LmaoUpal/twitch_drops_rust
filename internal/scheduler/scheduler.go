@@ -47,7 +47,7 @@ func Rank(now time.Time, campaigns []models.Campaign, online []models.Channel, p
 	seen := map[string]bool{}
 	for _, ch := range online {
 		login := strings.ToLower(ch.Login)
-		if !ch.Online || !ch.DropsEnabled || excluded(prefs, ch.Login) || seen[login] {
+		if !ch.Online || !ch.DropsEnabled || Excluded(prefs, ch.Login) || seen[login] {
 			continue
 		}
 		var covered []models.Campaign
@@ -153,7 +153,8 @@ func gameRank(prefs Prefs, game string) int {
 	return -1
 }
 
-func excluded(prefs Prefs, login string) bool {
+// Excluded reports whether the user excluded this channel login.
+func Excluded(prefs Prefs, login string) bool {
 	for _, l := range prefs.ExcludedChannels {
 		if strings.EqualFold(l, login) {
 			return true

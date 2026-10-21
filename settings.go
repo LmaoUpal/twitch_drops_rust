@@ -39,6 +39,7 @@ func (a *App) SaveSettings(cfg config.Config) error {
 
 	a.mu.Lock()
 	cfg.DeviceID = a.cfg.DeviceID
+	cfg.AutoMode = a.cfg.AutoMode // owned by SetAutoMode; the UI copy may be stale
 	gamesChanged := !slices.Equal(cfg.Games, a.cfg.Games)
 	a.cfg = cfg
 	path := a.cfgPath

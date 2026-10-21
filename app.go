@@ -68,10 +68,13 @@ type App struct {
 
 	watch     WatchState
 	stopWatch context.CancelFunc
+
+	auto     AutoState
+	autoKick chan struct{}
 }
 
 func NewApp(feed *activity.Feed) *App {
-	return &App{feed: feed, cfg: config.Default(), status: AuthStatus{State: authChecking}, watch: WatchState{State: watchIdle}}
+	return &App{feed: feed, cfg: config.Default(), status: AuthStatus{State: authChecking}, watch: WatchState{State: watchIdle}, auto: AutoState{Mode: modeAuto, State: "idle", Queue: []QueueItem{}}}
 }
 
 // startup is called when the app starts. The context is saved

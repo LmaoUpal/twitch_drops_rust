@@ -19,6 +19,7 @@ const appDir = "twitch-drops"
 type Config struct {
 	Games            []string `toml:"games" json:"games"`                        // priority order, first is most wanted
 	ExcludedChannels []string `toml:"excluded_channels" json:"excludedChannels"` // logins never to watch
+	AutoMode         bool     `toml:"auto_mode" json:"autoMode"`                 // the miner picks channels itself
 	AutoClaim        bool     `toml:"auto_claim" json:"autoClaim"`
 	StartWithWindows bool     `toml:"start_with_windows" json:"startWithWindows"`
 	MinimizeToTray   bool     `toml:"minimize_to_tray" json:"minimizeToTray"`
@@ -59,6 +60,7 @@ type Twitch struct {
 func Default() Config {
 	return Config{
 		Games:          []string{"Rust"},
+		AutoMode:       true,
 		AutoClaim:      true,
 		MinimizeToTray: true,
 		Notify:         Notify{DropClaimed: true, AccountNotLinked: true},
