@@ -62,13 +62,14 @@ func Decide(now time.Time, campaigns []models.Campaign, live []models.Channel, p
 	return d
 }
 
-// GamesToScan returns games whose open (any-channel) campaigns need watching, so the app
-// knows which game directories to list live drops streams from.
+// GamesToScan returns games whose campaigns need watching and are found through the game's
+// directory of live drops streams: open (any-channel) campaigns and ones whose allow list
+// is too long to look up channel by channel.
 func GamesToScan(now time.Time, campaigns []models.Campaign, prefs scheduler.Prefs) []models.Game {
 	seen := map[string]bool{}
 	var out []models.Game
 	for _, c := range scheduler.Eligible(now, campaigns, prefs) {
-		if c.Restricted() || seen[c.Game.ID] {
+		if c.LookupChannels() || seen[c.Game.ID] {
 			continue
 		}
 		seen[c.Game.ID] = true

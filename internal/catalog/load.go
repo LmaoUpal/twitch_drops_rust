@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/LmaoUpal/twitch_drops_rust/internal/dropsapi"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/facepunch"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/models"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/twitch/gql"
@@ -16,6 +17,14 @@ type Twitch interface {
 	StreamInfo(ctx context.Context, login string) (models.Channel, error)
 }
 
+// Sources are the campaign lists besides the Twitch inventory. Nil funcs are skipped.
+type Sources struct {
+	Facepunch func(context.Context) ([]facepunch.Campaign, error) // Rust schedule
+	Catalog   func(context.Context) (dropsapi.Catalog, error)     // community catalog of running campaigns
+	// Wanted filters catalog campaigns by game name; nil keeps every game.
+	Wanted func(game string) bool
+}
+
 type Snapshot struct {
 	Campaigns []models.Campaign    `json:"campaigns"`
 	Claimed   []models.ClaimedDrop `json:"claimed"`
@@ -23,27 +32,38 @@ type Snapshot struct {
 	Warnings  []string             `json:"warnings"` // non-fatal source failures
 }
 
-// Load gathers campaigns from the Twitch inventory and, when withRust is set, the
-// Facepunch schedule, then fills in live state for every channel-restricted campaign.
+// Load gathers campaigns from the Twitch inventory (authoritative, with progress), the
+// community catalog and the Facepunch schedule, in that priority, then fills in live state
+// for channel-restricted campaigns with short allow lists.
 // Only an inventory failure is an error; other sources degrade to warnings.
-func Load(ctx context.Context, tw Twitch, fetchFacepunch func(context.Context) ([]facepunch.Campaign, error), withRust bool) (Snapshot, error) {
+func Load(ctx context.Context, tw Twitch, src Sources) (Snapshot, error) {
 	snap := Snapshot{UpdatedAt: time.Now()}
 	inv, err := tw.Inventory(ctx)
 	if err != nil {
 		return snap, fmt.Errorf("inventory: %w", err)
 	}
-	inventory := inv.Campaigns
 	snap.Claimed = inv.Claimed
+	wanted := src.Wanted
+	if wanted == nil {
+		wanted = func(string) bool { return true }
+	}
 
-	var fromFacepunch []models.Campaign
-	if withRust {
-		fp, err := fetchFacepunch(ctx)
+	var fromFacepunch, fromCatalog []models.Campaign
+	if src.Facepunch != nil {
+		fp, err := src.Facepunch(ctx)
 		if err != nil {
 			snap.Warnings = append(snap.Warnings, "twitch.facepunch.com: "+err.Error())
 		}
 		fromFacepunch = FromFacepunch(fp)
 	}
-	snap.Campaigns = Merge(fromFacepunch, inventory)
+	if src.Catalog != nil {
+		cat, err := src.Catalog(ctx)
+		if err != nil {
+			snap.Warnings = append(snap.Warnings, "drops catalog: "+err.Error())
+		}
+		fromCatalog = FromDropsAPI(cat, wanted)
+	}
+	snap.Campaigns = Merge(Merge(fromFacepunch, fromCatalog), inv.Campaigns)
 
 	live := map[string]models.Channel{}
 	for _, login := range RestrictedLogins(snap.Campaigns) {

@@ -282,12 +282,16 @@ func (a *App) autoStep(ctx context.Context, run *autoRun) {
 	})
 }
 
-// liveChannels lists candidate channels: everyone on a campaign allow list plus live
-// drops-enabled streams of games with open campaigns.
+// liveChannels lists candidate channels: everyone on a short campaign allow list plus live
+// drops-enabled streams of games with open campaigns or long allow lists (scheduler then
+// keeps only allowed channels).
 func (a *App) liveChannels(ctx context.Context, run *autoRun, campaigns []models.Campaign, prefs scheduler.Prefs, now time.Time) ([]models.Channel, string) {
 	var live []models.Channel
 	var lastErr string
 	for _, c := range scheduler.Eligible(now, campaigns, prefs) {
+		if !c.LookupChannels() {
+			continue
+		}
 		for _, ch := range c.AllowedChannels {
 			fresh, err := run.channel(ctx, ch.Login, now)
 			if err != nil {

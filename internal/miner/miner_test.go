@@ -76,6 +76,13 @@ func TestGamesToScanAndUnexplored(t *testing.T) {
 	if got := GamesToScan(now, []models.Campaign{campaign("a", nil), campaign("b", nil)}, prefs); len(got) != 1 || got[0].Slug != "rust" {
 		t.Fatalf("got %v", got)
 	}
+	var many []models.Channel
+	for i := 0; i <= models.LookupLimit; i++ {
+		many = append(many, models.Channel{ID: string(rune('a' + i)), Login: string(rune('a' + i))})
+	}
+	if got := GamesToScan(now, []models.Campaign{campaign("big", many)}, prefs); len(got) != 1 {
+		t.Fatalf("long allow lists are found via the directory: %v", got)
+	}
 	got := Unexplored(now, []models.Campaign{campaign("a", nil)}, []string{"Rust", "Marvel Rivals"})
 	if len(got) != 1 || got[0] != "Marvel Rivals" {
 		t.Fatalf("got %v", got)

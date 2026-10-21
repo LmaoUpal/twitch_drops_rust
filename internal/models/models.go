@@ -83,6 +83,15 @@ type Campaign struct {
 // Restricted reports whether the campaign only counts on specific channels.
 func (c Campaign) Restricted() bool { return c.AllowedChannels != nil }
 
+// LookupLimit is the largest allow list whose channels are checked one by one; bigger
+// lists are found through the game's directory of live drops streams instead.
+const LookupLimit = 10
+
+// LookupChannels reports whether the allowed channels should be looked up individually.
+func (c Campaign) LookupChannels() bool {
+	return c.Restricted() && len(c.AllowedChannels) <= LookupLimit
+}
+
 // Active reports whether the campaign is running and has at least one drop left to earn.
 func (c Campaign) Active(now time.Time) bool {
 	if now.Before(c.StartAt) || !now.Before(c.EndAt) {

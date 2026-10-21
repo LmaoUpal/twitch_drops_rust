@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -90,9 +89,17 @@ func (a *App) stopCampaignLoop() {
 }
 
 func (a *App) loadCampaigns(ctx context.Context, client *gql.Client) {
-	snap, err := catalog.Load(ctx, client, func(ctx context.Context) ([]facepunch.Campaign, error) {
-		return facepunch.Fetch(ctx, nil)
-	}, a.wantsRust())
+	a.mu.Lock()
+	games := a.cfg.Games
+	a.mu.Unlock()
+	src := catalog.Sources{
+		Catalog: a.dropsCatalog,
+		Wanted:  func(game string) bool { return wantedGame(games, game) },
+	}
+	if wantedGame(games, catalog.Rust.Name) {
+		src.Facepunch = func(ctx context.Context) ([]facepunch.Campaign, error) { return facepunch.Fetch(ctx, nil) }
+	}
+	snap, err := catalog.Load(ctx, client, src)
 	if errors.Is(err, context.Canceled) {
 		return
 	}
@@ -132,20 +139,6 @@ func (a *App) loadProfile(ctx context.Context, client *gql.Client, login string)
 	s := a.status
 	a.mu.Unlock()
 	runtime.EventsEmit(a.ctx, eventAuthStatus, s)
-}
-
-func (a *App) wantsRust() bool {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	if len(a.cfg.Games) == 0 {
-		return true
-	}
-	for _, g := range a.cfg.Games {
-		if strings.EqualFold(g, catalog.Rust.Name) {
-			return true
-		}
-	}
-	return false
 }
 
 func (a *App) gqlClient(tok *auth.Token) *gql.Client {

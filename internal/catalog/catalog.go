@@ -57,8 +57,8 @@ func drop(d facepunch.Drop, c facepunch.Campaign) models.Drop {
 }
 
 // Merge returns the inventory campaigns followed by catalog campaigns the inventory does
-// not cover yet. A catalog campaign is covered when an inventory campaign of the same game
-// shares a drop name with it, with the same channel restriction.
+// not cover yet. A catalog campaign is covered when an inventory campaign has its ID, or is
+// of the same game, shares a drop name and has the same channel restriction.
 func Merge(catalog, inventory []models.Campaign) []models.Campaign {
 	out := append([]models.Campaign(nil), inventory...)
 	for _, c := range catalog {
@@ -77,6 +77,9 @@ func Merge(catalog, inventory []models.Campaign) []models.Campaign {
 }
 
 func covers(inv, c models.Campaign) bool {
+	if inv.ID != "" && inv.ID == c.ID {
+		return true
+	}
 	if inv.Game.ID != c.Game.ID || inv.Restricted() != c.Restricted() {
 		return false
 	}
@@ -110,11 +113,15 @@ func sameChannels(have, want []models.Channel) bool {
 	return true
 }
 
-// RestrictedLogins lists the distinct channel logins of all channel-restricted campaigns.
+// RestrictedLogins lists the distinct channel logins of channel-restricted campaigns whose
+// allow lists are short enough to look up one by one (see models.LookupLimit).
 func RestrictedLogins(campaigns []models.Campaign) []string {
 	seen := map[string]bool{}
 	var out []string
 	for _, c := range campaigns {
+		if !c.LookupChannels() {
+			continue
+		}
 		for _, ch := range c.AllowedChannels {
 			l := strings.ToLower(ch.Login)
 			if l != "" && !seen[l] {

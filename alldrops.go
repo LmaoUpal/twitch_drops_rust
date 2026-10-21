@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -47,4 +48,14 @@ func (a *App) GetAllDrops(refresh bool) AllDrops {
 	a.allDrops = res
 	a.mu.Unlock()
 	return res
+}
+
+// dropsCatalog feeds the community catalog into campaign refreshes, sharing GetAllDrops'
+// cache so the catalog is fetched at most once per allDropsTTL.
+func (a *App) dropsCatalog(context.Context) (dropsapi.Catalog, error) {
+	res := a.GetAllDrops(false)
+	if res.Error != "" && len(res.Campaigns) == 0 {
+		return dropsapi.Catalog{}, errors.New(res.Error)
+	}
+	return dropsapi.Catalog{Campaigns: res.Campaigns, UpdatedAt: res.UpdatedAt}, nil
 }
