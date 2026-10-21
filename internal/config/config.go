@@ -19,12 +19,14 @@ const appDir = "twitch-drops"
 type Config struct {
 	Games            []string `toml:"games" json:"games"`                        // priority order, first is most wanted
 	ExcludedChannels []string `toml:"excluded_channels" json:"excludedChannels"` // logins never to watch
-	AutoMode         bool     `toml:"auto_mode" json:"autoMode"`                 // the miner picks channels itself
-	AutoClaim        bool     `toml:"auto_claim" json:"autoClaim"`
-	StartWithWindows bool     `toml:"start_with_windows" json:"startWithWindows"`
-	MinimizeToTray   bool     `toml:"minimize_to_tray" json:"minimizeToTray"`
-	Notify           Notify   `toml:"notify" json:"notify"`
-	Language         string   `toml:"language" json:"language"` // "en" or "ru"
+	// PreferredChannels maps a game name to logins watched first, in order (the streamer queue).
+	PreferredChannels map[string][]string `toml:"preferred_channels,omitempty" json:"preferredChannels"`
+	AutoMode          bool                `toml:"auto_mode" json:"autoMode"` // the miner picks channels itself
+	AutoClaim         bool                `toml:"auto_claim" json:"autoClaim"`
+	StartWithWindows  bool                `toml:"start_with_windows" json:"startWithWindows"`
+	MinimizeToTray    bool                `toml:"minimize_to_tray" json:"minimizeToTray"`
+	Notify            Notify              `toml:"notify" json:"notify"`
+	Language          string              `toml:"language" json:"language"` // "en" or "ru"
 	// RefreshSeconds is how often campaigns and inventory are re-synced.
 	RefreshSeconds int `toml:"refresh_seconds" json:"refreshSeconds"`
 	// DeviceID is sent as X-Device-Id; generated once on first launch.

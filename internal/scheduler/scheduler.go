@@ -14,6 +14,9 @@ type Prefs struct {
 	Games []string
 	// ExcludedChannels by login, case-insensitive.
 	ExcludedChannels []string
+	// Preferred maps a game name to channel logins to watch first, in order. Channels not on
+	// the list are still watched when none of the listed ones can progress a campaign.
+	Preferred map[string][]string
 }
 
 type Choice struct {
@@ -21,7 +24,8 @@ type Choice struct {
 	Campaigns []models.Campaign // campaigns progressed by watching Channel, best first
 	// MinutesLeft until the nearest drop on this channel completes (-1 if unknown).
 	MinutesLeft int
-	// Reason is a short label for the UI: "streamer drop", "general drops" or "ends soonest".
+	// Reason is a short label for the UI: "preferred streamer", "streamer drop", "general drops"
+	// or "ends soonest".
 	Reason string
 
 	key rank
@@ -38,9 +42,10 @@ func Pick(now time.Time, campaigns []models.Campaign, online []models.Channel, p
 
 // Rank returns every live channel that progresses at least one eligible campaign, best first.
 //
-// Ranking per channel uses its best campaign: game priority, then channel-restricted
-// campaigns before open ones (short and exclusive), then the campaign ending first.
-// Ties go to the channel covering more campaigns, then to more viewers.
+// Ranking per channel uses its best campaign: game priority, then the user's streamer queue
+// for that game, then channel-restricted campaigns before open ones (short and exclusive),
+// then the campaign ending first. Ties go to the channel covering more campaigns, then to
+// more viewers.
 func Rank(now time.Time, campaigns []models.Campaign, online []models.Channel, prefs Prefs) []Choice {
 	eligible := Eligible(now, campaigns, prefs)
 	var out []Choice
@@ -62,6 +67,7 @@ func Rank(now time.Time, campaigns []models.Campaign, online []models.Channel, p
 		seen[login] = true
 		slices.SortFunc(covered, func(a, b models.Campaign) int { return campaignRank(prefs, a).cmp(campaignRank(prefs, b)) })
 		key := campaignRank(prefs, covered[0])
+		key.pref = prefRank(prefs, covered[0].Game.Name, ch.Login)
 		key.covered = -len(covered)
 		key.viewers = -ch.Viewers
 		left := -1
@@ -75,6 +81,8 @@ func Rank(now time.Time, campaigns []models.Campaign, online []models.Channel, p
 	slices.SortStableFunc(out, func(a, b Choice) int { return a.key.cmp(b.key) })
 	for i := range out {
 		switch {
+		case out[i].key.pref != notPreferred:
+			out[i].Reason = "preferred streamer"
 		case out[i].key.open == 0:
 			out[i].Reason = "streamer drop"
 		case i > 0 && out[i].key.end.Before(out[0].key.end):
@@ -99,11 +107,15 @@ func Eligible(now time.Time, campaigns []models.Campaign, prefs Prefs) []models.
 }
 
 // Better reports whether a is worth switching to from b: a wanted game ranked higher,
-// or a channel-restricted campaign against an open one of the same game priority.
-// Smaller differences (viewers, end dates) never justify interrupting a watch.
+// a channel higher in the user's streamer queue, or a channel-restricted campaign against
+// an open one at the same queue position. Smaller differences (viewers, end dates) never
+// justify interrupting a watch.
 func Better(a, b Choice) bool {
 	if a.key.game != b.key.game {
 		return a.key.game < b.key.game
+	}
+	if a.key.pref != b.key.pref {
+		return a.key.pref < b.key.pref
 	}
 	return a.key.open < b.key.open
 }
@@ -111,6 +123,7 @@ func Better(a, b Choice) bool {
 // rank orders candidates; lower is better on every field.
 type rank struct {
 	game    int
+	pref    int // position in the game's streamer queue, notPreferred if not on it
 	open    int // 0 restricted, 1 any channel
 	end     time.Time
 	covered int
@@ -121,6 +134,8 @@ func (r rank) cmp(o rank) int {
 	switch {
 	case r.game != o.game:
 		return r.game - o.game
+	case r.pref != o.pref:
+		return r.pref - o.pref
 	case r.open != o.open:
 		return r.open - o.open
 	case !r.end.Equal(o.end):
@@ -138,6 +153,29 @@ func campaignRank(prefs Prefs, c models.Campaign) rank {
 		r.open = 0
 	}
 	return r
+}
+
+// notPreferred is the queue position of channels the user did not list.
+const notPreferred = 1 << 20
+
+// prefRank returns login's position in the streamer queue of game, or notPreferred.
+func prefRank(prefs Prefs, game, login string) int {
+	for i, l := range Queue(prefs, game) {
+		if strings.EqualFold(l, login) {
+			return i
+		}
+	}
+	return notPreferred
+}
+
+// Queue returns the user's streamer queue for game (game name matched case-insensitively).
+func Queue(prefs Prefs, game string) []string {
+	for g, logins := range prefs.Preferred {
+		if strings.EqualFold(g, game) {
+			return logins
+		}
+	}
+	return nil
 }
 
 // gameRank returns the priority index of game, or -1 if it is not wanted.

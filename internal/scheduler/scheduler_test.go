@@ -108,3 +108,50 @@ func TestEligibleSkipsCompletedDrops(t *testing.T) {
 		t.Fatal("campaign whose drops are complete needs no more watching")
 	}
 }
+
+func TestPreferredQueue(t *testing.T) {
+	end := now.Add(7 * 24 * time.Hour)
+	general := campaign("rust-general", rust, nil, end)
+	streamer := campaign("rust-rivals", rust, []models.Channel{rivals}, end)
+	campaigns := []models.Campaign{general, streamer}
+	offlineSmall := smallRust
+	offlineSmall.Online = false
+	queue := Prefs{Games: []string{"Rust"}, Preferred: map[string][]string{"rust": {"SmallRust", "bigrust"}}}
+
+	tests := []struct {
+		name   string
+		online []models.Channel
+		prefs  Prefs
+		want   string
+	}{
+		{"first in queue beats streamer drop", []models.Channel{rivals, bigRust, smallRust}, queue, "smallrust"},
+		{"first offline takes second", []models.Channel{rivals, bigRust, offlineSmall}, queue, "bigrust"},
+		{"nobody from queue live falls back to ranking", []models.Channel{rivals, offlineSmall}, queue, "twitchrivals"},
+		{"excluded channel ignored even in queue", []models.Channel{rivals, bigRust, smallRust},
+			Prefs{Games: queue.Games, Preferred: queue.Preferred, ExcludedChannels: []string{"smallrust"}}, "bigrust"},
+		{"queue of another game ignored", []models.Channel{rivals, bigRust}, Prefs{Games: []string{"Rust"}, Preferred: map[string][]string{"Counter-Strike": {"bigrust"}}}, "twitchrivals"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Pick(now, campaigns, tt.online, tt.prefs)
+			if got == nil || got.Channel.Login != tt.want {
+				t.Fatalf("want %s, got %+v", tt.want, got)
+			}
+		})
+	}
+
+	// A queued channel whose campaigns need no more watching is skipped.
+	done := general
+	done.Drops = []models.Drop{{ID: "x", Claimed: true, StartAt: now.Add(-time.Hour), EndAt: end}}
+	if got := Pick(now, []models.Campaign{done, streamer}, []models.Channel{rivals, smallRust}, queue); got == nil || got.Channel.Login != "twitchrivals" {
+		t.Fatalf("queued channel with nothing to progress must be skipped, got %+v", got)
+	}
+
+	ranked := Rank(now, campaigns, []models.Channel{rivals, bigRust, smallRust}, queue)
+	if ranked[0].Reason != "preferred streamer" || ranked[1].Channel.Login != "bigrust" || ranked[2].Channel.Login != "twitchrivals" {
+		t.Fatalf("order: %+v", ranked)
+	}
+	if !Better(ranked[0], ranked[1]) || !Better(ranked[1], ranked[2]) || Better(ranked[2], ranked[1]) {
+		t.Fatal("Better: higher in queue switches, unlisted streamer drop does not beat a queued channel")
+	}
+}

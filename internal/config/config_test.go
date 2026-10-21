@@ -22,6 +22,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	want := Default()
 	want.Games = []string{"Rust", "Escape from Tarkov"}
 	want.ExcludedChannels = []string{"someone"}
+	want.PreferredChannels = map[string][]string{"Escape from Tarkov": {"a", "b"}}
 	if err := Save(path, want); err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +30,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Games) != 2 || got.ExcludedChannels[0] != "someone" || got.Twitch.Hashes["Inventory"] != want.Twitch.Hashes["Inventory"] {
+	if len(got.Games) != 2 || got.ExcludedChannels[0] != "someone" || len(got.PreferredChannels["Escape from Tarkov"]) != 2 || got.Twitch.Hashes["Inventory"] != want.Twitch.Hashes["Inventory"] {
 		t.Fatalf("round trip mismatch: %+v", got)
 	}
 }
