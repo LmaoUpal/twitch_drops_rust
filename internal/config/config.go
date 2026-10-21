@@ -25,20 +25,24 @@ type Config struct {
 type Twitch struct {
 	ClientID  string `toml:"client_id" json:"clientId"`
 	UserAgent string `toml:"user_agent" json:"userAgent"`
+	// Scopes requested during device login.
+	Scopes []string `toml:"scopes" json:"scopes"`
 	// Hashes maps GQL operation name to its persisted-query sha256 hash.
 	Hashes map[string]string `toml:"hashes" json:"hashes"`
 }
 
 // Default returns the settings used on first launch.
-// The client ID and hashes are taken from the Twitch Android/web clients and are
-// unverified until phase 2; update them here or in config.toml when Twitch rotates them.
+// The client ID is the Twitch Android TV app (the Android phone and web IDs are rejected
+// by the device flow, checked 2026-10-21). GQL hashes are unverified until phase 2.
+// Update them here or in config.toml when Twitch rotates them.
 func Default() Config {
 	return Config{
 		Games:     []string{"Rust"},
 		AutoClaim: true,
 		Twitch: Twitch{
-			ClientID:  "kd1unb4b3q4t58fwlpcbzcbnm76a8fp",
-			UserAgent: "Dalvik/2.1.0 (Linux; U; Android 16; Pixel 9 Build/BP2A.250605.031)",
+			ClientID:  "ue6666qo983tsx6so1t0vnawi233wa",
+			UserAgent: "Mozilla/5.0 (Linux; Android 7.1; Smart Box C1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+			Scopes:    []string{"channel_read", "chat:read", "user_blocks_edit", "user_blocks_read", "user_follows_edit", "user_read"},
 			Hashes: map[string]string{
 				"ViewerDropsDashboard":                "5a4da2ab3d5b47c9f9ce864e727b2cb346af1e3ea8b897fe8f704a97ff017619",
 				"DropCampaignDetails":                 "039277bf98f3130929262cc7c6efd9c141ca3749cb6dca442fc8ead9a53f77c1",

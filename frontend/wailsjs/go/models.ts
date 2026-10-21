@@ -3,6 +3,7 @@ export namespace config {
 	export class Twitch {
 	    clientId: string;
 	    userAgent: string;
+	    scopes: string[];
 	    hashes: Record<string, string>;
 	
 	    static createFrom(source: any = {}) {
@@ -13,6 +14,7 @@ export namespace config {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.clientId = source["clientId"];
 	        this.userAgent = source["userAgent"];
+	        this.scopes = source["scopes"];
 	        this.hashes = source["hashes"];
 	    }
 	}
@@ -51,6 +53,43 @@ export namespace config {
 		    }
 		    return a;
 		}
+	}
+
+}
+
+export namespace main {
+	
+	export class AuthStatus {
+	    state: string;
+	    login: string;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AuthStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.login = source["login"];
+	        this.error = source["error"];
+	    }
+	}
+	export class LoginPrompt {
+	    userCode: string;
+	    verificationUri: string;
+	    expiresIn: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new LoginPrompt(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.userCode = source["userCode"];
+	        this.verificationUri = source["verificationUri"];
+	        this.expiresIn = source["expiresIn"];
+	    }
 	}
 
 }
