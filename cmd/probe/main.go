@@ -4,6 +4,7 @@
 //	go run ./cmd/probe -query 'query { currentUser { login } }'
 //	go run ./cmd/probe -facepunch
 //	go run ./cmd/probe -watch somechannel -minutes 5
+//	go run ./cmd/probe -pubsub raid.123,predictions-channel-v1.123 -minutes 5
 package main
 
 import (
@@ -13,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/LmaoUpal/twitch_drops_rust/internal/config"
@@ -29,6 +31,7 @@ func main() {
 	query := flag.String("query", "", "raw GraphQL query instead of a persisted -op")
 	op := flag.String("op", "ViewerDropsDashboard", "GQL operation name (must have a hash in config)")
 	vars := flag.String("vars", "{}", "operation variables as JSON")
+	pubsub := flag.String("pubsub", "", "comma-separated PubSub topics to listen to; prints messages for -minutes")
 	flag.Parse()
 
 	runner := func() error { return run(*op, *query, *vars) }
@@ -37,6 +40,8 @@ func main() {
 		runner = runFacepunch
 	case *watch != "":
 		runner = func() error { return runWatch(*watch, time.Duration(*minutes)*time.Minute) }
+	case *pubsub != "":
+		runner = func() error { return runPubSub(strings.Split(*pubsub, ","), time.Duration(*minutes)*time.Minute) }
 	}
 	if err := runner(); err != nil {
 		fmt.Fprintln(os.Stderr, "probe:", err)

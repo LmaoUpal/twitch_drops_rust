@@ -84,6 +84,12 @@ func Default() Config {
 				"VideoPlayerStreamInfoOverlayChannel":  "198492e0857f6aedead9665c81c5a06d67b25b58034649687124083ff288597d",
 				"DropsHighlightService_AvailableDrops": "782dad0f032942260171d2d80a654f88bdd0c5a9dddc392e9bc92218a0f42d20",
 				"DirectoryGameRedirect":                "1f0300090caceec51f33c5e20647aceff9017f740f223c3c532ba6fa59f6b6cc",
+				// Channel points, from rdavydov/Twitch-Channel-Points-Miner-v2 constants.py (2026-10).
+				"ChannelPointsContext": "7fe050e3761eb2cf258d70ee1a21cbd76fa8cf3d7e7b12fc437e7029d446b5e3",
+				"ClaimCommunityPoints": "46aaeebe02c99afdf4fc97c7c0cba964124bf6b0af229395f1f6d1feed05b3d0",
+				"MakePrediction":       "b44682ecc88358817009f20e69d75081b1e58825bb40aa53d5dbadcc17c881d8",
+				"JoinRaid":             "c6a332a86d1087fbbb1a8623aa01bd1313d2386e7c63be60fdb2d1901f01a4ae",
+				"ChannelFollows":       "eecf815273d3d949e5cf0085cc5084cd8a1b5b7b6f7990cf43cb0beadf546907",
 			},
 		},
 	}
