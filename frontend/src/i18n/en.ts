@@ -145,6 +145,7 @@ export const en = {
     'camp.notifyingTitle': 'You get a desktop notification when tracked campaigns start',
     'camp.steamLink': 'Steam must be linked',
     'camp.linked': 'Account linked',
+    'camp.linkCheck': 'Check account link',
     'camp.unlinked': 'Account not linked',
     'camp.unlinkedTitle': 'Your {game} account isn\'t linked to Twitch',
     'camp.unlinkedText': 'Watch time still counts, but drops can\'t be claimed until you link it. Link on the publisher\'s site, then press Refresh.',

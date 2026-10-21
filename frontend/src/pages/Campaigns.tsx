@@ -105,6 +105,9 @@ function StreamerSection({c, now, watchingLogin}: { c: models.Campaign; now: num
 }
 
 function LinkStatus({c}: { c: models.Campaign }) {
+    if (c.source === 'catalog') {
+        return c.linkUrl ? <span><Link size={13}/><a onClick={() => BrowserOpenURL(c.linkUrl)}>{t('camp.linkCheck')}</a></span> : null;
+    }
     if (c.source === 'facepunch') {
         return <span><Link size={13}/><a onClick={() => BrowserOpenURL(c.linkUrl)}>{t('camp.steamLink')}</a></span>;
     }

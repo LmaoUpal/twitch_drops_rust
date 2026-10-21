@@ -148,6 +148,7 @@ export const ru: Record<Key, string> = {
     'camp.notifyingTitle': 'Придёт уведомление, когда стартуют кампании ваших игр',
     'camp.steamLink': 'Нужно привязать Steam',
     'camp.linked': 'Аккаунт привязан',
+    'camp.linkCheck': 'Проверьте привязку аккаунта',
     'camp.unlinked': 'Аккаунт не привязан',
     'camp.unlinkedTitle': 'Аккаунт {game} не привязан к Twitch',
     'camp.unlinkedText': 'Время просмотра засчитывается, но забрать дропы нельзя, пока не привяжете аккаунт. Привяжите его на сайте издателя и нажмите «Обновить».',
