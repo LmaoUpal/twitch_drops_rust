@@ -108,3 +108,23 @@ func TestParsePointsClaim(t *testing.T) {
 		t.Fatal("other topics are not points events")
 	}
 }
+
+func TestParsePrediction(t *testing.T) {
+	msg := `{"type":"event-created","data":{"timestamp":"2026-10-22T12:00:01Z","event":{"id":"ev-1","channel_id":"42","created_at":"2026-10-22T12:00:00Z","ended_at":null,"locked_at":null,"outcomes":[{"id":"o1","color":"BLUE","title":"Yes","total_points":1500,"total_users":12,"top_predictors":[],"badge":{}},{"id":"o2","color":"PINK","title":"No","total_points":500,"total_users":3,"top_predictors":[],"badge":{}}],"prediction_window_seconds":120,"status":"ACTIVE","title":"Win?","winning_outcome_id":null}}}`
+	p, ok := ParsePrediction(Message{Topic: "predictions-channel-v1.42", Type: "event-created", Payload: json.RawMessage(msg)})
+	if !ok || p.ID != "ev-1" || p.ChannelID != "42" || p.Status != "ACTIVE" || p.Window != 2*time.Minute || len(p.Outcomes) != 2 {
+		t.Fatalf("got %+v %v", p, ok)
+	}
+	if o := p.Outcomes[1]; o.ID != "o2" || o.Title != "No" || o.Points != 500 || o.Users != 3 {
+		t.Fatalf("outcome %+v", o)
+	}
+	if !p.ClosesAt().Equal(time.Date(2026, 10, 22, 12, 2, 0, 0, time.UTC)) {
+		t.Fatalf("closes at %v", p.ClosesAt())
+	}
+
+	res := `{"type":"prediction-result","data":{"timestamp":"x","prediction":{"id":"p","event_id":"ev-1","outcome_id":"o2","channel_id":"42","points":100,"predicted_at":"x","updated_at":"x","user_id":"1","result":{"type":"WIN","points_won":400,"is_acknowledged":false},"user_display_name":null}}}`
+	r, ok := ParsePredictionResult(Message{Topic: "predictions-user-v1.1", Type: "prediction-result", Payload: json.RawMessage(res)})
+	if !ok || r.EventID != "ev-1" || r.ChannelID != "42" || r.Type != "WIN" || r.PointsWon != 400 {
+		t.Fatalf("result %+v %v", r, ok)
+	}
+}

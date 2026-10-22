@@ -178,3 +178,35 @@ func (c *Client) Follows(ctx context.Context) ([]models.Channel, error) {
 	}
 	return out, nil
 }
+
+// ErrMustAcceptTOS means the account never accepted the predictions terms; the user has to
+// place one prediction on twitch.tv to accept them.
+var ErrMustAcceptTOS = errors.New("gql: accept the predictions terms on twitch.tv first")
+
+// MakePrediction bets points on an outcome of a channel prediction.
+func (c *Client) MakePrediction(ctx context.Context, eventID, outcomeID string, points int) error {
+	var out struct {
+		MakePrediction *struct {
+			Error *struct {
+				Code string `json:"code"`
+			} `json:"error"`
+		} `json:"makePrediction"`
+	}
+	vars := map[string]any{"input": map[string]any{
+		"eventID": eventID, "outcomeID": outcomeID, "points": points, "transactionID": NewSessionID() + NewSessionID(),
+	}}
+	if err := c.Do(ctx, "MakePrediction", vars, &out); err != nil {
+		return err
+	}
+	if out.MakePrediction == nil {
+		return errors.New("gql: prediction returned no result")
+	}
+	switch e := out.MakePrediction.Error; {
+	case e == nil || e.Code == "":
+		return nil
+	case e.Code == "MUST_ACCEPT_TOS":
+		return ErrMustAcceptTOS
+	default:
+		return fmt.Errorf("gql: prediction: %s", e.Code)
+	}
+}

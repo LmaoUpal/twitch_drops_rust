@@ -92,3 +92,29 @@ func TestFollowAndIsFollowing(t *testing.T) {
 		t.Fatalf("raw queries sent: %q", queries)
 	}
 }
+
+func TestMakePrediction(t *testing.T) {
+	var input map[string]any
+	reply := `{"data":{"makePrediction":{"error":null}}}`
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Variables struct {
+				Input map[string]any `json:"input"`
+			} `json:"variables"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		input = req.Variables.Input
+		w.Write([]byte(reply))
+	})
+	c.Hashes = map[string]string{"MakePrediction": "h"}
+	if err := c.MakePrediction(context.Background(), "ev", "o1", 100); err != nil {
+		t.Fatal(err)
+	}
+	if input["eventID"] != "ev" || input["outcomeID"] != "o1" || input["points"] != float64(100) || len(input["transactionID"].(string)) != 32 {
+		t.Fatalf("input %+v", input)
+	}
+	reply = `{"data":{"makePrediction":{"error":{"code":"MUST_ACCEPT_TOS"}}}}`
+	if err := c.MakePrediction(context.Background(), "ev", "o1", 100); err != ErrMustAcceptTOS {
+		t.Fatalf("want ErrMustAcceptTOS, got %v", err)
+	}
+}
