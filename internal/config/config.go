@@ -26,6 +26,7 @@ type Config struct {
 	StartWithWindows  bool                `toml:"start_with_windows" json:"startWithWindows"`
 	MinimizeToTray    bool                `toml:"minimize_to_tray" json:"minimizeToTray"`
 	Notify            Notify              `toml:"notify" json:"notify"`
+	Points            Points              `toml:"points" json:"points"`
 	Language          string              `toml:"language" json:"language"` // "en" or "ru"
 	// RefreshSeconds is how often campaigns and inventory are re-synced.
 	RefreshSeconds int `toml:"refresh_seconds" json:"refreshSeconds"`
@@ -39,6 +40,20 @@ type Notify struct {
 	DropClaimed      bool `toml:"drop_claimed" json:"dropClaimed"`
 	CampaignStarted  bool `toml:"campaign_started" json:"campaignStarted"`
 	AccountNotLinked bool `toml:"account_not_linked" json:"accountNotLinked"`
+}
+
+// Points configures channel points farming on a list of channels.
+type Points struct {
+	Enabled bool `toml:"enabled" json:"enabled"`
+	// Channels in priority order; the first live ones are watched.
+	Channels    []PointsChannel `toml:"channels" json:"channels"`
+	ClaimBonus  bool            `toml:"claim_bonus" json:"claimBonus"`    // claim the watch bonus chest
+	FollowOnAdd bool            `toml:"follow_on_add" json:"followOnAdd"` // follow a channel on Twitch when it is added
+	JoinChat    bool            `toml:"join_chat" json:"joinChat"`        // join watched channels' chat read-only
+}
+
+type PointsChannel struct {
+	Login string `toml:"login" json:"login"`
 }
 
 // MinRefreshSeconds is the lowest allowed RefreshSeconds.
@@ -66,6 +81,7 @@ func Default() Config {
 		AutoClaim:      true,
 		MinimizeToTray: true,
 		Notify:         Notify{DropClaimed: true, AccountNotLinked: true},
+		Points:         Points{Enabled: true, ClaimBonus: true, FollowOnAdd: true, JoinChat: true},
 		Language:       "en",
 		RefreshSeconds: 300,
 		Twitch: Twitch{

@@ -76,8 +76,8 @@ func (c *Client) Do(ctx context.Context, op string, vars, out any) error {
 	return c.send(ctx, body, out)
 }
 
-// DoQuery runs a raw GraphQL query string. Twitch only accepts these from some clients;
-// it exists for debugging (cmd/probe), production code uses Do.
+// DoQuery runs a raw GraphQL query string. Twitch only accepts these from some clients (the TV
+// client does); it is for debugging (cmd/probe) and operations with no known persisted hash.
 func (c *Client) DoQuery(ctx context.Context, query string, vars, out any) error {
 	body, err := json.Marshal(request{Query: query, Variables: vars})
 	if err != nil {
