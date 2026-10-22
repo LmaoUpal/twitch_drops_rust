@@ -34,6 +34,7 @@ const (
 	pointsLive       = "live"           // live, but no free slot
 	pointsOffline    = "offline"
 	pointsNotChecked = "unknown"
+	pointsDisabled   = "disabled" // the streamer turned channel points off
 )
 
 type PointsChannelState struct {
@@ -53,11 +54,12 @@ type PointsState struct {
 
 // pointsRun is the state of one points loop. watchers is shared with watch goroutines.
 type pointsRun struct {
-	client  *gql.Client
-	userID  string
-	pubsub  *realtime.Client
-	chat    *chat.Client
-	checked map[string]time.Time // login -> last balance read
+	client   *gql.Client
+	userID   string
+	pubsub   *realtime.Client
+	chat     *chat.Client
+	checked  map[string]time.Time // login -> last balance read
+	noPoints map[string]bool      // logins whose channel points are turned off
 
 	mu       sync.Mutex
 	watchers map[string]context.CancelFunc // login -> stop
@@ -274,6 +276,7 @@ func (a *App) startPointsLoop(ctx context.Context, tok *auth.Token) {
 		userID:   tok.UserID,
 		chat:     &chat.Client{Login: tok.Login, Token: tok.AccessToken},
 		checked:  map[string]time.Time{},
+		noPoints: map[string]bool{},
 		watchers: map[string]context.CancelFunc{},
 		cooldown: map[string]time.Time{},
 	}
@@ -347,7 +350,7 @@ func (a *App) pointsStep(ctx context.Context, run *pointsRun) {
 		logins[i] = c.Login
 	}
 	slots := points.Slots(dropsLogin != "")
-	pick := points.Pick(logins, run.withoutCooldown(live, now), slots, dropsLogin)
+	pick := points.Pick(logins, run.withoutCooldown(run.withPoints(live), now), slots, dropsLogin)
 
 	keep := map[string]bool{}
 	for _, ch := range pick {
@@ -383,6 +386,8 @@ func (a *App) pointsStep(ctx context.Context, run *pointsRun) {
 				s.Channels[i].State = pointsWatching
 			case l == dropsLogin:
 				s.Channels[i].State = pointsDrops
+			case run.noPoints[l]:
+				s.Channels[i].State = pointsDisabled
 			case online[l]:
 				s.Channels[i].State = pointsLive
 			default:
@@ -399,6 +404,7 @@ func (a *App) readBalance(ctx context.Context, run *pointsRun, ch models.Channel
 		slog.Warn("Couldn't read channel points on "+ch.DisplayName, "channel", ch.DisplayName, "err", err)
 		return
 	}
+	run.noPoints[strings.ToLower(ch.Login)] = !info.Enabled
 	a.updatePointsChannel(byLogin(ch.Login), func(s *PointsChannelState) { s.Balance = info.Balance })
 	if claim && info.ClaimID != "" {
 		a.claimBonus(ctx, run, info.ChannelID, info.ClaimID)
@@ -505,6 +511,17 @@ func (r *pointsRun) withoutCooldown(live []models.Channel, now time.Time) []mode
 			continue
 		}
 		out = append(out, ch)
+	}
+	return out
+}
+
+// withPoints drops channels whose streamer turned channel points off.
+func (r *pointsRun) withPoints(live []models.Channel) []models.Channel {
+	var out []models.Channel
+	for _, ch := range live {
+		if !r.noPoints[strings.ToLower(ch.Login)] {
+			out = append(out, ch)
+		}
 	}
 	return out
 }

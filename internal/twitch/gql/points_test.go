@@ -19,7 +19,7 @@ func TestChannelPoints(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.ChannelID != "197886470" || info.Balance != 1250 || info.ClaimID != "claim-1" {
+	if info.ChannelID != "197886470" || info.Balance != 1250 || info.ClaimID != "claim-1" || !info.Enabled {
 		t.Fatalf("got %+v", info)
 	}
 }

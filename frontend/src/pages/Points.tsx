@@ -13,6 +13,7 @@ const stateBadge: Record<string, { tone: 'success' | 'accent' | 'warning' | 'neu
     live: {tone: 'warning', key: 'pts.waiting'},
     offline: {tone: 'neutral', key: 'pts.offline'},
     unknown: {tone: 'neutral', key: 'pts.unknown'},
+    disabled: {tone: 'neutral', key: 'pts.disabledOnChannel'},
 };
 
 const num = (n: number) => n.toLocaleString(locale());

@@ -312,6 +312,7 @@ export const en = {
     'pts.waiting': 'Live · no free slot',
     'pts.offline': 'Offline',
     'pts.unknown': 'Not checked yet',
+    'pts.disabledOnChannel': 'Points are off on this channel',
     'pts.bonusesTitle': 'Bonus chests claimed this session',
     'pts.options': 'Options',
     'pts.claimBonus': 'Claim bonus chests',

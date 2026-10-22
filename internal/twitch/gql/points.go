@@ -12,6 +12,8 @@ import (
 type PointsInfo struct {
 	ChannelID string
 	Balance   int
+	// Enabled is false when the streamer turned channel points off; watching earns nothing.
+	Enabled bool
 	// ClaimID is the bonus chest waiting to be claimed, empty when there is none.
 	ClaimID string
 }
@@ -30,6 +32,9 @@ func (c *Client) ChannelPoints(ctx context.Context, login string) (PointsInfo, e
 						} `json:"availableClaim"`
 					} `json:"communityPoints"`
 				} `json:"self"`
+				CommunityPointsSettings *struct {
+					IsEnabled bool `json:"isEnabled"`
+				} `json:"communityPointsSettings"`
 			} `json:"channel"`
 		} `json:"community"`
 	}
@@ -40,7 +45,7 @@ func (c *Client) ChannelPoints(ctx context.Context, login string) (PointsInfo, e
 		return PointsInfo{}, fmt.Errorf("gql: no channel %s", login)
 	}
 	ch := out.Community.Channel
-	info := PointsInfo{ChannelID: ch.ID}
+	info := PointsInfo{ChannelID: ch.ID, Enabled: ch.CommunityPointsSettings != nil && ch.CommunityPointsSettings.IsEnabled}
 	if ch.Self == nil || ch.Self.CommunityPoints == nil {
 		return info, ErrUnauthorized
 	}

@@ -315,6 +315,7 @@ export const ru: Record<Key, string> = {
     'pts.waiting': 'В эфире · нет слота',
     'pts.offline': 'Оффлайн',
     'pts.unknown': 'Ещё не проверен',
+    'pts.disabledOnChannel': 'Баллы на канале выключены',
     'pts.bonusesTitle': 'Собрано бонусов за сессию',
     'pts.options': 'Настройки',
     'pts.claimBonus': 'Собирать бонусы',
