@@ -172,9 +172,18 @@ func (a *App) trackDropSession(ctx context.Context, client *gql.Client, channelI
 
 func (a *App) setWatch(update func(*WatchState)) {
 	a.mu.Lock()
+	before := a.watch
 	update(&a.watch)
 	s := a.watch
 	a.mu.Unlock()
 	runtime.EventsEmit(a.ctx, eventWatch, s)
 	a.updateTray()
+	// The drops watch takes a points slot and its channel isn't watched twice.
+	if busy(before) != busy(s) || !strings.EqualFold(before.Channel.Login, s.Channel.Login) {
+		a.kickPoints()
+	}
+}
+
+func busy(w WatchState) bool {
+	return w.State == watchActive || w.State == watchStarting
 }

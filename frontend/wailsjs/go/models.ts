@@ -104,6 +104,56 @@ export namespace config {
 	        this.hashes = source["hashes"];
 	    }
 	}
+	export class PointsChannel {
+	    login: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PointsChannel(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.login = source["login"];
+	    }
+	}
+	export class Points {
+	    enabled: boolean;
+	    channels: PointsChannel[];
+	    claimBonus: boolean;
+	    followOnAdd: boolean;
+	    joinChat: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new Points(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.channels = this.convertValues(source["channels"], PointsChannel);
+	        this.claimBonus = source["claimBonus"];
+	        this.followOnAdd = source["followOnAdd"];
+	        this.joinChat = source["joinChat"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Notify {
 	    dropClaimed: boolean;
 	    campaignStarted: boolean;
@@ -129,6 +179,7 @@ export namespace config {
 	    startWithWindows: boolean;
 	    minimizeToTray: boolean;
 	    notify: Notify;
+	    points: Points;
 	    language: string;
 	    refreshSeconds: number;
 	    twitch: Twitch;
@@ -147,6 +198,7 @@ export namespace config {
 	        this.startWithWindows = source["startWithWindows"];
 	        this.minimizeToTray = source["minimizeToTray"];
 	        this.notify = this.convertValues(source["notify"], Notify);
+	        this.points = this.convertValues(source["points"], Points);
 	        this.language = source["language"];
 	        this.refreshSeconds = source["refreshSeconds"];
 	        this.twitch = this.convertValues(source["twitch"], Twitch);
@@ -170,6 +222,8 @@ export namespace config {
 		    return a;
 		}
 	}
+	
+	
 	
 
 }
@@ -500,6 +554,80 @@ export namespace main {
 	        this.verificationUri = source["verificationUri"];
 	        this.expiresIn = source["expiresIn"];
 	    }
+	}
+	export class PointsChannelState {
+	    channel: models.Channel;
+	    state: string;
+	    balance: number;
+	    earned: number;
+	    bonuses: number;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PointsChannelState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.channel = this.convertValues(source["channel"], models.Channel);
+	        this.state = source["state"];
+	        this.balance = source["balance"];
+	        this.earned = source["earned"];
+	        this.bonuses = source["bonuses"];
+	        this.error = source["error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class PointsState {
+	    enabled: boolean;
+	    slots: number;
+	    channels: PointsChannelState[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PointsState(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.slots = source["slots"];
+	        this.channels = this.convertValues(source["channels"], PointsChannelState);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	
 	export class WatchState {

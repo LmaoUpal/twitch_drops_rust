@@ -5,6 +5,8 @@ import {activity} from '../models';
 import {main} from '../models';
 import {catalog} from '../models';
 
+export function AddPointsChannel(arg1:string):Promise<void>;
+
 export function CancelLogin():Promise<void>;
 
 export function ClaimDrop(arg1:string):Promise<void>;
@@ -23,15 +25,23 @@ export function GetAutoState():Promise<main.AutoState>;
 
 export function GetCampaigns():Promise<catalog.Snapshot>;
 
+export function GetPointsState():Promise<main.PointsState>;
+
 export function GetSettings():Promise<config.Config>;
 
 export function GetWatchState():Promise<main.WatchState>;
 
+export function ImportFollows():Promise<number>;
+
 export function Logout():Promise<void>;
+
+export function MovePointsChannel(arg1:string,arg2:number):Promise<void>;
 
 export function OpenConfigFolder():Promise<void>;
 
 export function RefreshCampaigns():Promise<void>;
+
+export function RemovePointsChannel(arg1:string):Promise<void>;
 
 export function Restore():Promise<void>;
 

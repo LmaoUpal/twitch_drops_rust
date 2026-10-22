@@ -72,6 +72,9 @@ type App struct {
 	auto     AutoState
 	autoKick chan struct{}
 
+	points     PointsState
+	pointsKick chan struct{}
+
 	tray           tray
 	quitting       bool // Quit was chosen, so closing must not hide to the tray
 	hiddenOnce     bool
@@ -101,6 +104,7 @@ func (a *App) startup(ctx context.Context) {
 		}
 		a.cfg = cfg
 	}
+	a.setPoints(func(*PointsState) {}) // list the configured channels before login
 	a.session = &auth.Session{
 		Client: &auth.Client{
 			ClientID:  a.cfg.Twitch.ClientID,
@@ -212,5 +216,6 @@ func (a *App) setStatus(s AuthStatus, tok *auth.Token) {
 	case s.State == authLoggedOut:
 		a.StopWatching()
 		a.stopCampaignLoop()
+		a.setPoints(func(p *PointsState) { p.Slots, p.Channels = 0, nil })
 	}
 }

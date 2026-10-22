@@ -63,6 +63,7 @@ func (a *App) startCampaignLoop(tok *auth.Token) {
 
 	client := a.gqlClient(tok)
 	a.startAutoLoop(ctx, tok)
+	a.startPointsLoop(ctx, tok)
 	go func() {
 		a.loadProfile(ctx, client, tok.Login)
 		for {
@@ -83,7 +84,7 @@ func (a *App) stopCampaignLoop() {
 	if a.stopLoop != nil {
 		a.stopLoop()
 	}
-	a.stopLoop, a.refreshNow, a.loopForToken, a.autoKick = nil, nil, "", nil
+	a.stopLoop, a.refreshNow, a.loopForToken, a.autoKick, a.pointsKick = nil, nil, "", nil, nil
 	a.seenActive, a.warnedUnlinked = nil, nil
 	a.campaigns = catalog.Snapshot{}
 }

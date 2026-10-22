@@ -53,7 +53,9 @@ func (a *App) SaveSettings(cfg config.Config) error {
 
 	a.mu.Lock()
 	cfg.DeviceID = a.cfg.DeviceID
-	cfg.AutoMode = a.cfg.AutoMode // owned by SetAutoMode; the UI copy may be stale
+	cfg.AutoMode = a.cfg.AutoMode               // owned by SetAutoMode; the UI copy may be stale
+	cfg.Points.Channels = a.cfg.Points.Channels // owned by the points channel API, same reason
+	pointsChanged := cfg.Points.Enabled != a.cfg.Points.Enabled || cfg.Points.JoinChat != a.cfg.Points.JoinChat
 	gamesChanged := !slices.Equal(cfg.Games, a.cfg.Games)
 	langChanged := cfg.Language != a.cfg.Language
 	queuesChanged := !maps.EqualFunc(cfg.PreferredChannels, a.cfg.PreferredChannels, slices.Equal)
@@ -72,6 +74,10 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	if gamesChanged {
 		slog.Info("Game priority updated: "+strings.Join(cfg.Games, ", "), "tag", "Settings")
 		a.RefreshCampaigns()
+	}
+	if pointsChanged {
+		a.setPoints(func(*PointsState) {})
+		a.kickPoints()
 	}
 	if queuesChanged && !gamesChanged {
 		slog.Info("Streamer queue updated", "tag", "Settings")
