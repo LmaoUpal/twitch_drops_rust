@@ -128,3 +128,14 @@ func TestParsePrediction(t *testing.T) {
 		t.Fatalf("result %+v %v", r, ok)
 	}
 }
+
+func TestParseRaid(t *testing.T) {
+	msg := `{"type":"raid_update_v2","raid":{"id":"r1","creator_id":"42","source_id":"42","target_id":"77","target_login":"friend","target_display_name":"Friend","target_profile_image":"x","transition_jitter_seconds":5,"force_raid_now_seconds":90,"viewer_count":1200}}`
+	r, ok := ParseRaid(Message{Topic: "raid.42", Type: "raid_update_v2", Payload: json.RawMessage(msg)})
+	if !ok || r.ID != "r1" || r.SourceID != "42" || r.TargetID != "77" || r.TargetLogin != "friend" || r.TargetName != "Friend" {
+		t.Fatalf("%+v %v", r, ok)
+	}
+	if _, ok := ParseRaid(Message{Topic: "raid.42", Type: "raid_cancel_v2", Payload: json.RawMessage(`{"type":"raid_cancel_v2"}`)}); ok {
+		t.Fatal("message without raid parsed")
+	}
+}

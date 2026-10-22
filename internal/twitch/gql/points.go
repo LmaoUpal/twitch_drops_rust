@@ -2,6 +2,7 @@ package gql
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -253,4 +254,11 @@ func (c *Client) ActivePredictions(ctx context.Context, login string) ([]points.
 		list = append(list, p)
 	}
 	return list, nil
+}
+
+// JoinRaid joins a raid, so the app follows the raiding viewers to the raided channel.
+func (c *Client) JoinRaid(ctx context.Context, raidID string) error {
+	// The payload shape is unverified (no real raid seen yet); only GQL errors count.
+	var out json.RawMessage
+	return c.Do(ctx, "JoinRaid", map[string]any{"input": map[string]any{"raidID": raidID}}, &out)
 }

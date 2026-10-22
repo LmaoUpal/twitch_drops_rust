@@ -132,3 +132,21 @@ func TestActivePredictions(t *testing.T) {
 		t.Fatalf("%+v", p)
 	}
 }
+
+func TestJoinRaid(t *testing.T) {
+	var input map[string]any
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Variables struct {
+				Input map[string]any `json:"input"`
+			} `json:"variables"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		input = req.Variables.Input
+		w.Write([]byte(`{"data":{"joinRaid":{"raidID":"r1"}}}`))
+	})
+	c.Hashes = map[string]string{"JoinRaid": "h"}
+	if err := c.JoinRaid(context.Background(), "r1"); err != nil || input["raidID"] != "r1" {
+		t.Fatalf("%v %+v", err, input)
+	}
+}

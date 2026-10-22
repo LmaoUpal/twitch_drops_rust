@@ -50,7 +50,9 @@ type Points struct {
 	ClaimBonus  bool            `toml:"claim_bonus" json:"claimBonus"`    // claim the watch bonus chest
 	FollowOnAdd bool            `toml:"follow_on_add" json:"followOnAdd"` // follow a channel on Twitch when it is added
 	JoinChat    bool            `toml:"join_chat" json:"joinChat"`        // join watched channels' chat read-only
-	Bets        Bets            `toml:"bets" json:"bets"`
+	// JoinRaids joins raids started by listed channels and watches the raided channel for a while.
+	JoinRaids bool `toml:"join_raids" json:"joinRaids"`
+	Bets      Bets `toml:"bets" json:"bets"`
 }
 
 type PointsChannel struct {
@@ -100,7 +102,7 @@ func Default() Config {
 		AutoClaim:      true,
 		MinimizeToTray: true,
 		Notify:         Notify{DropClaimed: true, AccountNotLinked: true},
-		Points: Points{Enabled: true, ClaimBonus: true, FollowOnAdd: true, JoinChat: true,
+		Points: Points{Enabled: true, ClaimBonus: true, FollowOnAdd: true, JoinChat: true, JoinRaids: true,
 			Bets: Bets{Strategy: StrategySmart, Percent: 5, MaxPoints: 10000, MinUsers: 20, SecondsBeforeClose: 15}},
 		Language:       "en",
 		RefreshSeconds: 300,

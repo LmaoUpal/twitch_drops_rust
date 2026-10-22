@@ -161,3 +161,40 @@ func ParsePredictionResult(m Message) (PredictionResult, bool) {
 	pr := p.Data.Prediction
 	return PredictionResult{EventID: pr.EventID, ChannelID: pr.ChannelID, Type: pr.Result.Type, PointsWon: pr.Result.PointsWon}, true
 }
+
+// TopicRaid is the topic with a channel's raids: raid_update_v2 when one is announced,
+// raid_go_v2 when it goes, raid_cancel_v2.
+const TopicRaid = "raid"
+
+// RaidTopic is the topic with the raids a channel starts.
+func RaidTopic(channelID string) string { return TopicRaid + "." + channelID }
+
+// Raid is a raid one channel starts on another.
+type Raid struct {
+	ID          string
+	SourceID    string // the raiding channel
+	TargetID    string
+	TargetLogin string
+	TargetName  string
+}
+
+// ParseRaid reads a raid message; Message.Type tells announced, gone or cancelled apart.
+func ParseRaid(m Message) (Raid, bool) {
+	if m.TopicName() != TopicRaid {
+		return Raid{}, false
+	}
+	var p struct {
+		Raid struct {
+			ID                string `json:"id"`
+			SourceID          string `json:"source_id"`
+			TargetID          string `json:"target_id"`
+			TargetLogin       string `json:"target_login"`
+			TargetDisplayName string `json:"target_display_name"`
+		} `json:"raid"`
+	}
+	if err := json.Unmarshal(m.Payload, &p); err != nil || p.Raid.ID == "" {
+		return Raid{}, false
+	}
+	r := p.Raid
+	return Raid{ID: r.ID, SourceID: first(r.SourceID, m.TopicID()), TargetID: r.TargetID, TargetLogin: r.TargetLogin, TargetName: first(r.TargetDisplayName, r.TargetLogin)}, true
+}
