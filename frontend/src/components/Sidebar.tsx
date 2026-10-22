@@ -1,4 +1,4 @@
-import {ChevronsUpDown, Compass, Gift, LayoutDashboard, LucideIcon, Package, Pickaxe, ScrollText, Settings} from 'lucide-react';
+import {ChevronsUpDown, Coins, Compass, Gift, LayoutDashboard, LucideIcon, Package, Pickaxe, ScrollText, Settings} from 'lucide-react';
 import {Page, useStore} from '../store';
 import {campaignPhase, findDrop, isRust} from '../lib/derive';
 import {fmtCountdown, fmtMinutes, isSet} from '../lib/format';
@@ -69,8 +69,9 @@ function StatusCard() {
 }
 
 export function Sidebar() {
-    const {auth, snapshot, now} = useStore();
+    const {auth, snapshot, points, now} = useStore();
     const activeCount = (snapshot?.campaigns ?? []).filter(c => campaignPhase(c, now) === 'active').length;
+    const pointsWatching = (points?.channels ?? []).filter(c => c.state === 'watching').length;
     return (
         <aside className="sidebar">
             <div className="brand">
@@ -83,6 +84,7 @@ export function Sidebar() {
             <NavItem page="dashboard" icon={LayoutDashboard} label={t('nav.dashboard')}/>
             <NavItem page="campaigns" icon={Gift} label={t('nav.campaigns')} count={activeCount}/>
             <NavItem page="drops" icon={Compass} label={t('nav.allDrops')}/>
+            <NavItem page="points" icon={Coins} label={t('nav.points')} count={pointsWatching}/>
             <NavItem page="inventory" icon={Package} label={t('nav.inventory')}/>
             <NavItem page="activity" icon={ScrollText} label={t('nav.activity')}/>
             <div className="grow"/>

@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Campaigns from './pages/Campaigns';
 import AllDrops from './pages/AllDrops';
+import Points from './pages/Points';
 import Inventory from './pages/Inventory';
 import Settings from './pages/Settings';
 import Activity from './pages/Activity';
@@ -30,6 +31,7 @@ function Shell() {
                 {page === 'dashboard' && <Dashboard/>}
                 {page === 'campaigns' && <Campaigns/>}
                 {page === 'drops' && <AllDrops/>}
+                {page === 'points' && <Points/>}
                 {page === 'inventory' && <Inventory/>}
                 {page === 'activity' && <Activity/>}
                 {page === 'settings' && <Settings/>}

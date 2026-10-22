@@ -1,16 +1,17 @@
 import {createContext, ReactNode, useContext, useEffect, useRef, useState} from 'react';
-import {GetActivity, GetAuthStatus, GetAutoState, GetCampaigns, GetSettings, GetWatchState, SaveSettings} from "../wailsjs/go/main/App";
+import {GetActivity, GetAuthStatus, GetAutoState, GetCampaigns, GetPointsState, GetSettings, GetWatchState, SaveSettings} from "../wailsjs/go/main/App";
 import {activity, catalog, config, main} from "../wailsjs/go/models";
 import {EventsOn} from "../wailsjs/runtime/runtime";
 import {setLang} from "./i18n";
 
-export type Page = 'dashboard' | 'campaigns' | 'drops' | 'inventory' | 'activity' | 'settings';
+export type Page = 'dashboard' | 'campaigns' | 'drops' | 'points' | 'inventory' | 'activity' | 'settings';
 
 interface Store {
     auth: main.AuthStatus;
     snapshot: catalog.Snapshot | null;
     watch: main.WatchState | null;
     auto: main.AutoState | null;
+    points: main.PointsState | null;
     settings: config.Config | null;
     activity: activity.Entry[];
     now: number;
@@ -43,6 +44,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
     const [snapshot, setSnapshot] = useState<catalog.Snapshot | null>(null);
     const [watch, setWatch] = useState<main.WatchState | null>(null);
     const [auto, setAuto] = useState<main.AutoState | null>(null);
+    const [points, setPoints] = useState<main.PointsState | null>(null);
     const [settings, setSettings] = useState<config.Config | null>(null);
     const [log, setLog] = useState<activity.Entry[]>([]);
     const [page, setPage] = useState<Page>('dashboard');
@@ -55,6 +57,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
         GetCampaigns().then(setSnapshot);
         GetWatchState().then(setWatch);
         GetAutoState().then(setAuto);
+        GetPointsState().then(setPoints);
         GetSettings().then(setSettings);
         GetActivity().then(e => setLog(e ?? []));
         const offs = [
@@ -62,6 +65,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
             EventsOn('campaigns:update', setSnapshot),
             EventsOn('watch:status', setWatch),
             EventsOn('auto:status', setAuto),
+            EventsOn('points:status', setPoints),
             EventsOn('activity:entry', (e: activity.Entry) => setLog(l => [...l.slice(-999), e])),
         ];
         return () => offs.forEach(off => off());
@@ -83,7 +87,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
 
     setLang(settings?.language ?? 'en');
     return (
-        <Ctx.Provider value={{auth, snapshot, watch, auto, settings, activity: log, now, page, setPage, updateSettings, settingsError}}>
+        <Ctx.Provider value={{auth, snapshot, watch, auto, points, settings, activity: log, now, page, setPage, updateSettings, settingsError}}>
             {children}
         </Ctx.Provider>
     );
