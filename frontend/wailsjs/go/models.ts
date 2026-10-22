@@ -84,6 +84,26 @@ export namespace catalog {
 
 export namespace config {
 	
+	export class Bets {
+	    strategy: string;
+	    percent: number;
+	    maxPoints: number;
+	    minUsers: number;
+	    secondsBeforeClose: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Bets(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.strategy = source["strategy"];
+	        this.percent = source["percent"];
+	        this.maxPoints = source["maxPoints"];
+	        this.minUsers = source["minUsers"];
+	        this.secondsBeforeClose = source["secondsBeforeClose"];
+	    }
+	}
 	export class Twitch {
 	    clientId: string;
 	    userAgent: string;
@@ -106,6 +126,7 @@ export namespace config {
 	}
 	export class PointsChannel {
 	    login: string;
+	    predictions: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new PointsChannel(source);
@@ -114,6 +135,7 @@ export namespace config {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.login = source["login"];
+	        this.predictions = source["predictions"];
 	    }
 	}
 	export class Points {
@@ -122,6 +144,7 @@ export namespace config {
 	    claimBonus: boolean;
 	    followOnAdd: boolean;
 	    joinChat: boolean;
+	    bets: Bets;
 	
 	    static createFrom(source: any = {}) {
 	        return new Points(source);
@@ -134,6 +157,7 @@ export namespace config {
 	        this.claimBonus = source["claimBonus"];
 	        this.followOnAdd = source["followOnAdd"];
 	        this.joinChat = source["joinChat"];
+	        this.bets = this.convertValues(source["bets"], Bets);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -561,6 +585,8 @@ export namespace main {
 	    balance: number;
 	    earned: number;
 	    bonuses: number;
+	    bets: number;
+	    betProfit: number;
 	    error: string;
 	
 	    static createFrom(source: any = {}) {
@@ -574,6 +600,8 @@ export namespace main {
 	        this.balance = source["balance"];
 	        this.earned = source["earned"];
 	        this.bonuses = source["bonuses"];
+	        this.bets = source["bets"];
+	        this.betProfit = source["betProfit"];
 	        this.error = source["error"];
 	    }
 	
@@ -599,6 +627,7 @@ export namespace main {
 	    enabled: boolean;
 	    slots: number;
 	    channels: PointsChannelState[];
+	    betsNeedTos: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new PointsState(source);
@@ -609,6 +638,7 @@ export namespace main {
 	        this.enabled = source["enabled"];
 	        this.slots = source["slots"];
 	        this.channels = this.convertValues(source["channels"], PointsChannelState);
+	        this.betsNeedTos = source["betsNeedTos"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -51,6 +51,8 @@ export function SetAutoMode(arg1:boolean):Promise<void>;
 
 export function SetPaused(arg1:boolean):Promise<void>;
 
+export function SetPointsChannelPredictions(arg1:string,arg2:boolean):Promise<void>;
+
 export function StartLogin():Promise<main.LoginPrompt>;
 
 export function StopWatching():Promise<void>;

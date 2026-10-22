@@ -15,6 +15,7 @@ import (
 
 	"github.com/LmaoUpal/twitch_drops_rust/internal/activity"
 	"github.com/LmaoUpal/twitch_drops_rust/internal/config"
+	"github.com/LmaoUpal/twitch_drops_rust/internal/points"
 )
 
 const eventActivity = "activity:entry"
@@ -35,6 +36,7 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	cfg.Games = cleanList(cfg.Games, false)
 	cfg.ExcludedChannels = cleanList(cfg.ExcludedChannels, true)
 	cfg.PreferredChannels = cleanQueues(cfg.PreferredChannels, cfg.Games)
+	cfg.Points.Bets = cleanBets(cfg.Points.Bets)
 	if cfg.Twitch.Hashes == nil {
 		cfg.Twitch.Hashes = map[string]string{}
 	}
@@ -138,6 +140,20 @@ func ActivityText(entries []activity.Entry) string {
 }
 
 // cleanList trims entries and drops blanks and duplicates (case-insensitive).
+// cleanBets keeps bet settings in sane ranges.
+func cleanBets(b config.Bets) config.Bets {
+	switch b.Strategy {
+	case config.StrategySmart, config.StrategyMostVoted, config.StrategyHighOdds:
+	default:
+		b.Strategy = config.StrategySmart
+	}
+	b.Percent = max(1, min(b.Percent, 100))
+	b.MaxPoints = max(points.MinBet, b.MaxPoints)
+	b.MinUsers = max(0, b.MinUsers)
+	b.SecondsBeforeClose = max(3, min(b.SecondsBeforeClose, 60))
+	return b
+}
+
 // cleanQueues keeps streamer queues of wanted games only, keyed by the game's name as spelled
 // in games, with clean logins; empty queues are dropped.
 func cleanQueues(in map[string][]string, games []string) map[string][]string {

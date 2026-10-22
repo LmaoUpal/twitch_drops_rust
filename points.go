@@ -38,18 +38,22 @@ const (
 )
 
 type PointsChannelState struct {
-	Channel models.Channel `json:"channel"`
-	State   string         `json:"state"` // watching | drops | live | offline | unknown
-	Balance int            `json:"balance"`
-	Earned  int            `json:"earned"`  // points gained since the app started
-	Bonuses int            `json:"bonuses"` // bonus chests claimed since the app started
-	Error   string         `json:"error"`
+	Channel   models.Channel `json:"channel"`
+	State     string         `json:"state"` // watching | drops | live | offline | unknown
+	Balance   int            `json:"balance"`
+	Earned    int            `json:"earned"`    // points gained since the app started
+	Bonuses   int            `json:"bonuses"`   // bonus chests claimed since the app started
+	Bets      int            `json:"bets"`      // predictions bet on since the app started
+	BetProfit int            `json:"betProfit"` // points won minus points bet, over resolved bets
+	Error     string         `json:"error"`
 }
 
 type PointsState struct {
 	Enabled  bool                 `json:"enabled"`
 	Slots    int                  `json:"slots"` // channels watched for points right now at most
 	Channels []PointsChannelState `json:"channels"`
+	// BetsNeedTOS is set when Twitch refused a bet until the predictions terms are accepted.
+	BetsNeedTOS bool `json:"betsNeedTos"`
 }
 
 // pointsRun is the state of one points loop. watchers is shared with watch goroutines.
@@ -64,6 +68,7 @@ type pointsRun struct {
 	mu       sync.Mutex
 	watchers map[string]context.CancelFunc // login -> stop
 	cooldown map[string]time.Time          // login -> when its watch ended on its own
+	bets     map[string]*pendingBet        // prediction id -> bet scheduled or placed
 }
 
 // GetPointsState returns the channel points status for the UI.
@@ -279,6 +284,7 @@ func (a *App) startPointsLoop(ctx context.Context, tok *auth.Token) {
 		noPoints: map[string]bool{},
 		watchers: map[string]context.CancelFunc{},
 		cooldown: map[string]time.Time{},
+		bets:     map[string]*pendingBet{},
 	}
 	run.pubsub = &realtime.Client{Token: tok.AccessToken, Handler: func(m realtime.Message) { a.onRealtime(ctx, run, m) }}
 	go run.pubsub.Run(ctx)
@@ -318,6 +324,7 @@ func (a *App) pointsStep(ctx context.Context, run *pointsRun) {
 
 	now := time.Now()
 	var live []models.Channel
+	betting := false
 	for _, c := range cfg.Channels {
 		ch, err := run.client.StreamInfo(ctx, c.Login)
 		if ctx.Err() != nil {
@@ -332,6 +339,10 @@ func (a *App) pointsStep(ctx context.Context, run *pointsRun) {
 			continue
 		}
 		topics = append(topics, realtime.PlaybackTopic(ch.ID))
+		if c.Predictions {
+			topics = append(topics, realtime.PredictionsTopic(ch.ID))
+			betting = true
+		}
 		live = append(live, ch)
 		a.updatePointsChannel(byLogin(c.Login), func(s *PointsChannelState) { s.Channel, s.Error = ch, "" })
 		if t, ok := run.checked[strings.ToLower(ch.Login)]; !ok || now.Sub(t) >= balanceInterval {
@@ -371,6 +382,9 @@ func (a *App) pointsStep(ctx context.Context, run *pointsRun) {
 		}
 	}
 	run.chat.SetChannels(chatRooms)
+	if betting {
+		topics = append(topics, realtime.PredictionsUserTopic(run.userID))
+	}
 	run.pubsub.SetTopics(topics)
 
 	online := map[string]bool{}
@@ -436,6 +450,14 @@ func (a *App) claimBonus(ctx context.Context, run *pointsRun, channelID, claimID
 
 // onRealtime handles PubSub events: points earned, bonus chests and streams going up or down.
 func (a *App) onRealtime(ctx context.Context, run *pointsRun, m realtime.Message) {
+	if p, ok := realtime.ParsePrediction(m); ok {
+		a.onPrediction(ctx, run, p)
+		return
+	}
+	if r, ok := realtime.ParsePredictionResult(m); ok {
+		a.onPredictionResult(run, r)
+		return
+	}
 	if e, ok := realtime.ParsePoints(m); ok {
 		switch e.Type {
 		case "points-earned", "points-spent":

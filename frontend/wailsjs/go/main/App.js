@@ -94,6 +94,10 @@ export function SetPaused(arg1) {
   return window['go']['main']['App']['SetPaused'](arg1);
 }
 
+export function SetPointsChannelPredictions(arg1, arg2) {
+  return window['go']['main']['App']['SetPointsChannelPredictions'](arg1, arg2);
+}
+
 export function StartLogin() {
   return window['go']['main']['App']['StartLogin']();
 }

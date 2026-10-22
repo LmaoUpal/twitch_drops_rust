@@ -133,7 +133,8 @@ func highOdds(p Prediction) Outcome {
 	return *best
 }
 
-// Payout is what a bet of points on outcome would return if it wins, at the current pool.
+// Payout is what a bet of points on outcome would return, stake included, if it wins at
+// the current pool.
 func (p Prediction) Payout(outcomeID string, points int) int {
 	total, _ := p.totals()
 	for _, o := range p.Outcomes {
