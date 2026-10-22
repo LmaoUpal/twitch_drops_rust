@@ -132,7 +132,7 @@ func (a *App) loadProfile(ctx context.Context, client *gql.Client, login string)
 		return
 	}
 	a.mu.Lock()
-	if a.status.State != authLoggedIn {
+	if a.status.State != authLoggedIn || a.status.Login != login { // signed out or switched meanwhile
 		a.mu.Unlock()
 		return
 	}
@@ -140,6 +140,7 @@ func (a *App) loadProfile(ctx context.Context, client *gql.Client, login string)
 	s := a.status
 	a.mu.Unlock()
 	runtime.EventsEmit(a.ctx, eventAuthStatus, s)
+	a.updateProfile(login, ch.DisplayName, ch.AvatarURL)
 }
 
 func (a *App) gqlClient(tok *auth.Token) *gql.Client {

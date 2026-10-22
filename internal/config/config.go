@@ -31,10 +31,25 @@ type Config struct {
 	Theme             string              `toml:"theme" json:"theme"`       // ThemeDark, ThemeLight or ThemeSystem
 	// RefreshSeconds is how often campaigns and inventory are re-synced.
 	RefreshSeconds int `toml:"refresh_seconds" json:"refreshSeconds"`
+	// Accounts are the saved Twitch logins; ActiveAccount is the Key of the one mining.
+	// Both are owned by the account API, so the UI never sends them.
+	Accounts      []Account `toml:"accounts,omitempty" json:"-"`
+	ActiveAccount string    `toml:"active_account" json:"-"`
 	// DeviceID is sent as X-Device-Id; generated once on first launch.
 	DeviceID string `toml:"device_id,omitempty" json:"-"`
 	Twitch   Twitch `toml:"twitch" json:"twitch"`
 }
+
+// Account is a saved login. Key names its token in the OS keyring.
+type Account struct {
+	Key         string `toml:"key"`
+	Login       string `toml:"login"`
+	DisplayName string `toml:"display_name,omitempty"`
+	AvatarURL   string `toml:"avatar_url,omitempty"`
+}
+
+// LegacyAccount is the keyring key of the single account saved before multi-account support.
+const LegacyAccount = "main"
 
 // Notify selects which desktop notifications are shown.
 type Notify struct {
@@ -114,6 +129,7 @@ func Default() Config {
 			Bets: Bets{Strategy: StrategySmart, Percent: 5, MaxPoints: 10000, MinUsers: 20, SecondsBeforeClose: 15}},
 		Language:       "en",
 		Theme:          ThemeDark,
+		ActiveAccount:  LegacyAccount,
 		RefreshSeconds: 300,
 		Twitch: Twitch{
 			ClientID:  "ue6666qo983tsx6so1t0vnawi233wa",

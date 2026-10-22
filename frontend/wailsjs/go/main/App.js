@@ -22,6 +22,10 @@ export function ExportActivity() {
   return window['go']['main']['App']['ExportActivity']();
 }
 
+export function GetAccounts() {
+  return window['go']['main']['App']['GetAccounts']();
+}
+
 export function GetActivity() {
   return window['go']['main']['App']['GetActivity']();
 }
@@ -74,6 +78,10 @@ export function RefreshCampaigns() {
   return window['go']['main']['App']['RefreshCampaigns']();
 }
 
+export function RemoveAccount(arg1) {
+  return window['go']['main']['App']['RemoveAccount'](arg1);
+}
+
 export function RemovePointsChannel(arg1) {
   return window['go']['main']['App']['RemovePointsChannel'](arg1);
 }
@@ -104,6 +112,10 @@ export function StartLogin() {
 
 export function StopWatching() {
   return window['go']['main']['App']['StopWatching']();
+}
+
+export function SwitchAccount(arg1) {
+  return window['go']['main']['App']['SwitchAccount'](arg1);
 }
 
 export function WatchChannel(arg1) {

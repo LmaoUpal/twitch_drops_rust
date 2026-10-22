@@ -60,6 +60,8 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	cfg.DeviceID = a.cfg.DeviceID
 	cfg.AutoMode = a.cfg.AutoMode               // owned by SetAutoMode; the UI copy may be stale
 	cfg.Points.Channels = a.cfg.Points.Channels // owned by the points channel API, same reason
+	cfg.Accounts = a.cfg.Accounts               // owned by the account API
+	cfg.ActiveAccount = a.cfg.ActiveAccount
 	pointsChanged := cfg.Points.Enabled != a.cfg.Points.Enabled || cfg.Points.JoinChat != a.cfg.Points.JoinChat || cfg.Points.JoinRaids != a.cfg.Points.JoinRaids
 	gamesChanged := !slices.Equal(cfg.Games, a.cfg.Games)
 	langChanged := cfg.Language != a.cfg.Language

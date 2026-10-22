@@ -76,3 +76,40 @@ func TestSaveOmitsDefaultTwitchConstants(t *testing.T) {
 		t.Fatalf("reload lost data: %+v", got.Twitch)
 	}
 }
+
+func TestAccountsRoundTripAndLegacyDefault(t *testing.T) {
+	dir := t.TempDir()
+	old := filepath.Join(dir, "old.toml")
+	if err := os.WriteFile(old, []byte("games = [\"Rust\"]\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(old)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.ActiveAccount != LegacyAccount || len(cfg.Accounts) != 0 {
+		t.Fatalf("config from before accounts should use the legacy key: %+v", cfg)
+	}
+
+	path := filepath.Join(dir, "config.toml")
+	cfg.Accounts = []Account{{Key: LegacyAccount, Login: "one"}, {Key: "user-2", Login: "two", AvatarURL: "https://x/a.png"}}
+	cfg.ActiveAccount = "user-2"
+	if err := Save(path, cfg); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ActiveAccount != "user-2" || len(got.Accounts) != 2 || got.Accounts[1].AvatarURL != "https://x/a.png" {
+		t.Fatalf("accounts round trip mismatch: %+v", got.Accounts)
+	}
+
+	cfg.Accounts, cfg.ActiveAccount = nil, ""
+	if err := Save(path, cfg); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := Load(path); got.ActiveAccount != "" {
+		t.Fatalf("signed out of every account, active should stay empty, got %q", got.ActiveAccount)
+	}
+}

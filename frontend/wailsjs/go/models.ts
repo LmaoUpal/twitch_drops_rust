@@ -84,6 +84,24 @@ export namespace catalog {
 
 export namespace config {
 	
+	export class Account {
+	    Key: string;
+	    Login: string;
+	    DisplayName: string;
+	    AvatarURL: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Account(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Key = source["Key"];
+	        this.Login = source["Login"];
+	        this.DisplayName = source["DisplayName"];
+	        this.AvatarURL = source["AvatarURL"];
+	    }
+	}
 	export class Bets {
 	    strategy: string;
 	    percent: number;
@@ -420,6 +438,26 @@ export namespace gql {
 
 export namespace main {
 	
+	export class AccountInfo {
+	    key: string;
+	    login: string;
+	    displayName: string;
+	    avatarUrl: string;
+	    active: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new AccountInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.key = source["key"];
+	        this.login = source["login"];
+	        this.displayName = source["displayName"];
+	        this.avatarUrl = source["avatarUrl"];
+	        this.active = source["active"];
+	    }
+	}
 	export class AllDrops {
 	    campaigns: dropsapi.Campaign[];
 	    // Go type: time
