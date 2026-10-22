@@ -339,6 +339,8 @@ export const en = {
     'pts.followHelp': 'Follows a channel on Twitch when you add it here (already followed channels are left as they are).',
     'pts.chat': 'Join chat (read-only)',
     'pts.chatHelp': 'Shows the account in the chat of watched channels. It never writes messages.',
+    'pts.raids': 'Join raids',
+    'pts.raidsHelp': 'When a listed channel raids someone, join the raid and watch the raided channel for about 10 minutes in a free slot.',
     'pts.howTitle': 'How it works',
     'pts.how': 'Points come from watch time (+10 every 5 minutes, more with a subscription), bonus chests (+50) and watch streaks. The app watches without video, like for drops.',
 };

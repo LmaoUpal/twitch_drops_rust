@@ -201,6 +201,13 @@ export default function Points() {
                             </div>
                             <Toggle on={settings.points.joinChat} onChange={v => updateSettings(c => { c.points.joinChat = v; })}/>
                         </div>
+                        <div className="setting-row">
+                            <div className="grow">
+                                <div className="setting-label">{t('pts.raids')}</div>
+                                <div className="setting-help">{t('pts.raidsHelp')}</div>
+                            </div>
+                            <Toggle on={settings.points.joinRaids} onChange={v => updateSettings(c => { c.points.joinRaids = v; })}/>
+                        </div>
                     </div>
                     <BetSettings/>
                     <div className="card settings-card">
