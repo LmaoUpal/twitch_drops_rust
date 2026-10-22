@@ -43,6 +43,9 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	if _, ok := messages[cfg.Language]; !ok {
 		cfg.Language = "en"
 	}
+	if !slices.Contains([]string{config.ThemeDark, config.ThemeLight, config.ThemeSystem}, cfg.Theme) {
+		cfg.Theme = config.ThemeDark
+	}
 
 	a.mu.Lock()
 	autostartChanged := cfg.StartWithWindows != a.cfg.StartWithWindows
@@ -60,6 +63,7 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	pointsChanged := cfg.Points.Enabled != a.cfg.Points.Enabled || cfg.Points.JoinChat != a.cfg.Points.JoinChat || cfg.Points.JoinRaids != a.cfg.Points.JoinRaids
 	gamesChanged := !slices.Equal(cfg.Games, a.cfg.Games)
 	langChanged := cfg.Language != a.cfg.Language
+	themeChanged := cfg.Theme != a.cfg.Theme
 	queuesChanged := !maps.EqualFunc(cfg.PreferredChannels, a.cfg.PreferredChannels, slices.Equal)
 	a.cfg = cfg
 	path := a.cfgPath
@@ -72,6 +76,9 @@ func (a *App) SaveSettings(cfg config.Config) error {
 	}
 	if langChanged {
 		a.updateTray()
+	}
+	if themeChanged {
+		a.applyTheme(cfg.Theme)
 	}
 	if gamesChanged {
 		slog.Info("Game priority updated: "+strings.Join(cfg.Games, ", "), "tag", "Settings")

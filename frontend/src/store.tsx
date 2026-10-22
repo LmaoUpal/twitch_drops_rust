@@ -39,6 +39,22 @@ function useNow(ms: number) {
     return now;
 }
 
+/** Sets data-theme on <html>; "system" follows the OS light/dark mode live. */
+function useTheme(theme: string) {
+    useEffect(() => {
+        const root = document.documentElement;
+        if (theme !== 'system') {
+            root.dataset.theme = theme === 'light' ? 'light' : 'dark';
+            return;
+        }
+        const mq = window.matchMedia('(prefers-color-scheme: light)');
+        const apply = () => { root.dataset.theme = mq.matches ? 'light' : 'dark'; };
+        apply();
+        mq.addEventListener('change', apply);
+        return () => mq.removeEventListener('change', apply);
+    }, [theme]);
+}
+
 export function StoreProvider({children}: { children: ReactNode }) {
     const [auth, setAuth] = useState<main.AuthStatus>({state: 'checking', login: '', displayName: '', avatarUrl: '', error: ''});
     const [snapshot, setSnapshot] = useState<catalog.Snapshot | null>(null);
@@ -85,6 +101,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
         });
     }
 
+    useTheme(settings?.theme ?? 'dark');
     setLang(settings?.language ?? 'en');
     return (
         <Ctx.Provider value={{auth, snapshot, watch, auto, points, settings, activity: log, now, page, setPage, updateSettings, settingsError}}>

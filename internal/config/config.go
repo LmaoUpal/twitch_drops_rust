@@ -28,6 +28,7 @@ type Config struct {
 	Notify            Notify              `toml:"notify" json:"notify"`
 	Points            Points              `toml:"points" json:"points"`
 	Language          string              `toml:"language" json:"language"` // "en" or "ru"
+	Theme             string              `toml:"theme" json:"theme"`       // ThemeDark, ThemeLight or ThemeSystem
 	// RefreshSeconds is how often campaigns and inventory are re-synced.
 	RefreshSeconds int `toml:"refresh_seconds" json:"refreshSeconds"`
 	// DeviceID is sent as X-Device-Id; generated once on first launch.
@@ -77,6 +78,13 @@ const (
 	StrategyHighOdds  = "high_odds"
 )
 
+// UI themes; ThemeSystem follows the Windows app mode.
+const (
+	ThemeDark   = "dark"
+	ThemeLight  = "light"
+	ThemeSystem = "system"
+)
+
 // MinRefreshSeconds is the lowest allowed RefreshSeconds.
 const MinRefreshSeconds = 30
 
@@ -105,6 +113,7 @@ func Default() Config {
 		Points: Points{Enabled: true, ClaimBonus: true, FollowOnAdd: true, JoinChat: true, JoinRaids: true,
 			Bets: Bets{Strategy: StrategySmart, Percent: 5, MaxPoints: 10000, MinUsers: 20, SecondsBeforeClose: 15}},
 		Language:       "en",
+		Theme:          ThemeDark,
 		RefreshSeconds: 300,
 		Twitch: Twitch{
 			ClientID:  "ue6666qo983tsx6so1t0vnawi233wa",

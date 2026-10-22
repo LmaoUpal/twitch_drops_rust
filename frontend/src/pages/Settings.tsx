@@ -326,6 +326,16 @@ export default function Settings() {
                             ]}/>
                         </div>
                     </div>
+                    <div className="card settings-card">
+                        <h3>{t('set.theme')}</h3>
+                        <div>
+                            <Segmented value={settings.theme || 'dark'} onChange={v => set(c => { c.theme = v; })} options={[
+                                {value: 'dark', label: t('set.themeDark')},
+                                {value: 'light', label: t('set.themeLight')},
+                                {value: 'system', label: t('set.themeSystem')},
+                            ]}/>
+                        </div>
+                    </div>
                     <Advanced/>
                 </div>
             </div>

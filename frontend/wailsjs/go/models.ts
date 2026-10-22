@@ -207,6 +207,7 @@ export namespace config {
 	    notify: Notify;
 	    points: Points;
 	    language: string;
+	    theme: string;
 	    refreshSeconds: number;
 	    twitch: Twitch;
 	
@@ -226,6 +227,7 @@ export namespace config {
 	        this.notify = this.convertValues(source["notify"], Notify);
 	        this.points = this.convertValues(source["points"], Points);
 	        this.language = source["language"];
+	        this.theme = source["theme"];
 	        this.refreshSeconds = source["refreshSeconds"];
 	        this.twitch = this.convertValues(source["twitch"], Twitch);
 	    }

@@ -104,6 +104,7 @@ func (a *App) startup(ctx context.Context) {
 		}
 		a.cfg = cfg
 	}
+	a.applyTheme(a.cfg.Theme)
 	a.setPoints(func(*PointsState) {}) // list the configured channels before login
 	a.session = &auth.Session{
 		Client: &auth.Client{
