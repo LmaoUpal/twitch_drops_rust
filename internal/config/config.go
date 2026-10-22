@@ -50,11 +50,30 @@ type Points struct {
 	ClaimBonus  bool            `toml:"claim_bonus" json:"claimBonus"`    // claim the watch bonus chest
 	FollowOnAdd bool            `toml:"follow_on_add" json:"followOnAdd"` // follow a channel on Twitch when it is added
 	JoinChat    bool            `toml:"join_chat" json:"joinChat"`        // join watched channels' chat read-only
+	Bets        Bets            `toml:"bets" json:"bets"`
 }
 
 type PointsChannel struct {
-	Login string `toml:"login" json:"login"`
+	Login       string `toml:"login" json:"login"`
+	Predictions bool   `toml:"predictions" json:"predictions"` // bet on this channel's predictions
 }
+
+// Bets configures automatic betting on channel point predictions.
+type Bets struct {
+	Strategy  string `toml:"strategy" json:"strategy"`    // "smart", "most_voted" or "high_odds"
+	Percent   int    `toml:"percent" json:"percent"`      // share of the balance to bet
+	MaxPoints int    `toml:"max_points" json:"maxPoints"` // cap per bet
+	MinUsers  int    `toml:"min_users" json:"minUsers"`   // skip predictions with fewer voters
+	// SecondsBeforeClose is when the bet is placed: late, so the votes show where the crowd is.
+	SecondsBeforeClose int `toml:"seconds_before_close" json:"secondsBeforeClose"`
+}
+
+// Bet strategies.
+const (
+	StrategySmart     = "smart"
+	StrategyMostVoted = "most_voted"
+	StrategyHighOdds  = "high_odds"
+)
 
 // MinRefreshSeconds is the lowest allowed RefreshSeconds.
 const MinRefreshSeconds = 30
@@ -81,7 +100,8 @@ func Default() Config {
 		AutoClaim:      true,
 		MinimizeToTray: true,
 		Notify:         Notify{DropClaimed: true, AccountNotLinked: true},
-		Points:         Points{Enabled: true, ClaimBonus: true, FollowOnAdd: true, JoinChat: true},
+		Points: Points{Enabled: true, ClaimBonus: true, FollowOnAdd: true, JoinChat: true,
+			Bets: Bets{Strategy: StrategySmart, Percent: 5, MaxPoints: 10000, MinUsers: 20, SecondsBeforeClose: 15}},
 		Language:       "en",
 		RefreshSeconds: 300,
 		Twitch: Twitch{
