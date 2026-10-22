@@ -144,6 +144,7 @@ export namespace config {
 	    claimBonus: boolean;
 	    followOnAdd: boolean;
 	    joinChat: boolean;
+	    joinRaids: boolean;
 	    bets: Bets;
 	
 	    static createFrom(source: any = {}) {
@@ -157,6 +158,7 @@ export namespace config {
 	        this.claimBonus = source["claimBonus"];
 	        this.followOnAdd = source["followOnAdd"];
 	        this.joinChat = source["joinChat"];
+	        this.joinRaids = source["joinRaids"];
 	        this.bets = this.convertValues(source["bets"], Bets);
 	    }
 	

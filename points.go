@@ -70,6 +70,8 @@ type pointsRun struct {
 	watchers map[string]context.CancelFunc // login -> stop
 	cooldown map[string]time.Time          // login -> when its watch ended on its own
 	bets     map[string]*pendingBet        // prediction id -> bet scheduled or placed
+	raids    map[string]bool               // raid ids already joined
+	raid     raidWatch                     // the raided channel watched for a while
 }
 
 // GetPointsState returns the channel points status for the UI.
@@ -287,6 +289,7 @@ func (a *App) startPointsLoop(ctx context.Context, tok *auth.Token) {
 		watchers: map[string]context.CancelFunc{},
 		cooldown: map[string]time.Time{},
 		bets:     map[string]*pendingBet{},
+		raids:    map[string]bool{},
 	}
 	run.pubsub = &realtime.Client{Token: tok.AccessToken, Handler: func(m realtime.Message) { a.onRealtime(ctx, run, m) }}
 	go run.pubsub.Run(ctx)
@@ -343,6 +346,9 @@ func (a *App) pointsStep(ctx context.Context, run *pointsRun) {
 		live = append(live, ch)
 		a.updatePointsChannel(byLogin(c.Login), func(s *PointsChannelState) { s.Channel, s.Error = ch, "" })
 		topics = append(topics, realtime.PlaybackTopic(ch.ID))
+		if cfg.JoinRaids {
+			topics = append(topics, realtime.RaidTopic(ch.ID))
+		}
 		if c.Predictions {
 			topics = append(topics, realtime.PredictionsTopic(ch.ID))
 			betting = true
@@ -372,7 +378,13 @@ func (a *App) pointsStep(ctx context.Context, run *pointsRun) {
 		logins[i] = c.Login
 	}
 	slots := points.Slots(dropsLogin != "")
-	pick := points.Pick(logins, run.withoutCooldown(run.withPoints(live), now), slots, dropsLogin)
+	candidates, pool := logins, run.withoutCooldown(run.withPoints(live), now)
+	if target, ok := a.raidTarget(ctx, run, logins, now); ok {
+		// Lowest priority: it only takes a slot no listed channel needs.
+		candidates = append(slices.Clone(logins), target.Login)
+		pool = append(pool, target)
+	}
+	pick := points.Pick(candidates, pool, slots, dropsLogin)
 
 	keep := map[string]bool{}
 	for _, ch := range pick {
@@ -461,6 +473,10 @@ func (a *App) claimBonus(ctx context.Context, run *pointsRun, channelID, claimID
 
 // onRealtime handles PubSub events: points earned, bonus chests and streams going up or down.
 func (a *App) onRealtime(ctx context.Context, run *pointsRun, m realtime.Message) {
+	if r, ok := realtime.ParseRaid(m); ok {
+		a.onRaid(ctx, run, m.Type, r)
+		return
+	}
 	if p, ok := realtime.ParsePrediction(m); ok {
 		a.onPrediction(ctx, run, p)
 		return
