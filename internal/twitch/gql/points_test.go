@@ -118,3 +118,17 @@ func TestMakePrediction(t *testing.T) {
 		t.Fatalf("want ErrMustAcceptTOS, got %v", err)
 	}
 }
+
+func TestActivePredictions(t *testing.T) {
+	c := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"data":{"channel":{"id":"42","activePredictionEvents":[{"id":"ev","status":"ACTIVE","title":"Win?","createdAt":"2026-10-22T08:21:32Z","predictionWindowSeconds":1200,"outcomes":[{"id":"o1","title":"Yes","totalPoints":500,"totalUsers":7},{"id":"o2","title":"No","totalPoints":100,"totalUsers":2}]}]}}}`))
+	})
+	got, err := c.ActivePredictions(context.Background(), "x")
+	if err != nil || len(got) != 1 {
+		t.Fatalf("%+v %v", got, err)
+	}
+	p := got[0]
+	if p.ID != "ev" || p.ChannelID != "42" || p.Window.Minutes() != 20 || len(p.Outcomes) != 2 || p.Outcomes[0].Users != 7 || p.Outcomes[1].Points != 100 {
+		t.Fatalf("%+v", p)
+	}
+}

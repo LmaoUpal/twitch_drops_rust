@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/LmaoUpal/twitch_drops_rust/internal/models"
+	"github.com/LmaoUpal/twitch_drops_rust/internal/points"
 )
 
 // PointsInfo is the user's channel points state on one channel.
@@ -209,4 +211,46 @@ func (c *Client) MakePrediction(ctx context.Context, eventID, outcomeID string, 
 	default:
 		return fmt.Errorf("gql: prediction: %s", e.Code)
 	}
+}
+
+// activePredictionsQuery is raw: no persisted hash is known for reading predictions with this
+// client (the TV client accepts raw queries, checked 2026-10-21).
+const activePredictionsQuery = `query($login: String!) { channel(name: $login) { id activePredictionEvents { id status title createdAt predictionWindowSeconds outcomes { id title totalPoints totalUsers } } } }`
+
+// ActivePredictions returns a channel's predictions that are open for bets or locked.
+func (c *Client) ActivePredictions(ctx context.Context, login string) ([]points.Prediction, error) {
+	var out struct {
+		Channel *struct {
+			ID     string `json:"id"`
+			Events []struct {
+				ID                      string    `json:"id"`
+				Status                  string    `json:"status"`
+				Title                   string    `json:"title"`
+				CreatedAt               time.Time `json:"createdAt"`
+				PredictionWindowSeconds float64   `json:"predictionWindowSeconds"`
+				Outcomes                []struct {
+					ID          string `json:"id"`
+					Title       string `json:"title"`
+					TotalPoints int    `json:"totalPoints"`
+					TotalUsers  int    `json:"totalUsers"`
+				} `json:"outcomes"`
+			} `json:"activePredictionEvents"`
+		} `json:"channel"`
+	}
+	if err := c.DoQuery(ctx, activePredictionsQuery, map[string]any{"login": login}, &out); err != nil {
+		return nil, err
+	}
+	if out.Channel == nil {
+		return nil, fmt.Errorf("gql: no channel %s", login)
+	}
+	var list []points.Prediction
+	for _, e := range out.Channel.Events {
+		p := points.Prediction{ID: e.ID, ChannelID: out.Channel.ID, Title: e.Title, Status: e.Status, CreatedAt: e.CreatedAt,
+			Window: time.Duration(e.PredictionWindowSeconds * float64(time.Second))}
+		for _, o := range e.Outcomes {
+			p.Outcomes = append(p.Outcomes, points.Outcome{ID: o.ID, Title: o.Title, Points: o.TotalPoints, Users: o.TotalUsers})
+		}
+		list = append(list, p)
+	}
+	return list, nil
 }

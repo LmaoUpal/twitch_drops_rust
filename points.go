@@ -38,14 +38,15 @@ const (
 )
 
 type PointsChannelState struct {
-	Channel   models.Channel `json:"channel"`
-	State     string         `json:"state"` // watching | drops | live | offline | unknown
-	Balance   int            `json:"balance"`
-	Earned    int            `json:"earned"`    // points gained since the app started
-	Bonuses   int            `json:"bonuses"`   // bonus chests claimed since the app started
-	Bets      int            `json:"bets"`      // predictions bet on since the app started
-	BetProfit int            `json:"betProfit"` // points won minus points bet, over resolved bets
-	Error     string         `json:"error"`
+	Channel     models.Channel `json:"channel"`
+	State       string         `json:"state"` // watching | drops | live | offline | unknown
+	Balance     int            `json:"balance"`
+	Earned      int            `json:"earned"`      // points gained since the app started
+	Bonuses     int            `json:"bonuses"`     // bonus chests claimed since the app started
+	Bets        int            `json:"bets"`        // predictions bet on since the app started
+	BetProfit   int            `json:"betProfit"`   // points won minus points bet, over resolved bets
+	Predictions bool           `json:"predictions"` // bets on this channel's predictions (from the config)
+	Error       string         `json:"error"`
 }
 
 type PointsState struct {
@@ -241,6 +242,7 @@ func (a *App) setPoints(update func(*PointsState)) {
 		if !ok {
 			s = PointsChannelState{Channel: models.Channel{Login: c.Login}, State: pointsNotChecked}
 		}
+		s.Predictions = c.Predictions
 		list = append(list, s)
 	}
 	a.points.Channels = list
@@ -338,13 +340,22 @@ func (a *App) pointsStep(ctx context.Context, run *pointsRun) {
 			a.updatePointsChannel(byLogin(c.Login), func(s *PointsChannelState) { s.Error = "channel not found" })
 			continue
 		}
+		live = append(live, ch)
+		a.updatePointsChannel(byLogin(c.Login), func(s *PointsChannelState) { s.Channel, s.Error = ch, "" })
 		topics = append(topics, realtime.PlaybackTopic(ch.ID))
 		if c.Predictions {
 			topics = append(topics, realtime.PredictionsTopic(ch.ID))
 			betting = true
+			if ch.Online {
+				// PubSub only reports a prediction when it starts or gets votes; one already
+				// running when the app subscribed is picked up here.
+				if preds, err := run.client.ActivePredictions(ctx, ch.Login); err == nil {
+					for _, p := range preds {
+						a.onPrediction(ctx, run, p)
+					}
+				}
+			}
 		}
-		live = append(live, ch)
-		a.updatePointsChannel(byLogin(c.Login), func(s *PointsChannelState) { s.Channel, s.Error = ch, "" })
 		if t, ok := run.checked[strings.ToLower(ch.Login)]; !ok || now.Sub(t) >= balanceInterval {
 			run.checked[strings.ToLower(ch.Login)] = now
 			a.readBalance(ctx, run, ch, cfg.ClaimBonus)
