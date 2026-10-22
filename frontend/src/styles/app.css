@@ -872,3 +872,4 @@ button.tag-chip.suggest:hover { color: var(--text-primary); border-color: var(--
 .points-row .avatar { flex-shrink: 0; }
 .points-stats { align-items: flex-end; gap: 2px; min-width: 70px; }
 .points-balance { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.bet-btn.on { color: var(--accent-text); background: var(--accent-subtle); }

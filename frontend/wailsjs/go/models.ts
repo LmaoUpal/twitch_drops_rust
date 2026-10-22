@@ -587,6 +587,7 @@ export namespace main {
 	    bonuses: number;
 	    bets: number;
 	    betProfit: number;
+	    predictions: boolean;
 	    error: string;
 	
 	    static createFrom(source: any = {}) {
@@ -602,6 +603,7 @@ export namespace main {
 	        this.bonuses = source["bonuses"];
 	        this.bets = source["bets"];
 	        this.betProfit = source["betProfit"];
+	        this.predictions = source["predictions"];
 	        this.error = source["error"];
 	    }
 	

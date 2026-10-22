@@ -1,11 +1,12 @@
 import {useState} from 'react';
-import {AtSign, Coins, Gift, GripVertical, Plus, UserPlus, X} from 'lucide-react';
-import {AddPointsChannel, ImportFollows, MovePointsChannel, RemovePointsChannel} from '../../wailsjs/go/main/App';
-import {main} from '../../wailsjs/go/models';
+import {AtSign, Coins, Dices, ExternalLink, Gift, GripVertical, Plus, UserPlus, X} from 'lucide-react';
+import {AddPointsChannel, ImportFollows, MovePointsChannel, RemovePointsChannel, SetPointsChannelPredictions} from '../../wailsjs/go/main/App';
+import {config, main} from '../../wailsjs/go/models';
 import {useStore} from '../store';
 import {fmtViewers} from '../lib/format';
 import {Key, locale, t, tn} from '../i18n';
-import {Avatar, Badge, Button, Empty, Toggle} from '../components/ui';
+import {Avatar, Badge, Banner, Button, Empty, Select, Toggle} from '../components/ui';
+import {BrowserOpenURL} from '../../wailsjs/runtime/runtime';
 
 const stateBadge: Record<string, { tone: 'success' | 'accent' | 'warning' | 'neutral'; key: Key }> = {
     watching: {tone: 'success', key: 'pts.watching'},
@@ -45,9 +46,53 @@ function ChannelRow({c, i, drag, setDrag}: { c: main.PointsChannelState; i: numb
                 <span className="faint" style={{fontSize: 11}}>
                     {c.earned > 0 && <span style={{color: 'var(--success-text)'}}>+{num(c.earned)} </span>}
                     {c.bonuses > 0 && <span title={t('pts.bonusesTitle')}><Gift size={11}/> {c.bonuses}</span>}
+                    {c.bets > 0 && <span title={t('pts.betsTitle')}> <Dices size={11}/> {c.bets}{c.betProfit !== 0 && <span style={{color: c.betProfit > 0 ? 'var(--success-text)' : 'var(--error-text)'}}> {c.betProfit > 0 ? '+' : ''}{num(c.betProfit)}</span>}</span>}
                 </span>
             </div>
+            <button className={`icon-btn bet-btn ${c.predictions ? 'on' : ''}`} title={c.predictions ? t('pts.betsOn') : t('pts.betsOff')}
+                    onClick={() => SetPointsChannelPredictions(ch.login, !c.predictions)}><Dices size={15}/></button>
             <button className="icon-btn" title={t('set.remove')} onClick={() => RemovePointsChannel(ch.login)}><X size={14}/></button>
+        </div>
+    );
+}
+
+/** A number setting of the bets card. */
+function BetNumber({label, value, min, max, onChange}: { label: string; value: number; min: number; max?: number; onChange(v: number): void }) {
+    return (
+        <div className="setting-row">
+            <div className="grow setting-label">{label}</div>
+            <label className="input" style={{width: 96, height: 30}}>
+                <input type="number" min={min} max={max} value={value}
+                       onChange={e => onChange(Math.max(min, Math.min(max ?? Infinity, Number(e.target.value) || min)))}/>
+            </label>
+        </div>
+    );
+}
+
+function BetSettings() {
+    const {settings, updateSettings} = useStore();
+    if (!settings) return null;
+    const b = settings.points.bets;
+    const set = (change: (b: config.Bets) => void) => updateSettings(c => change(c.points.bets));
+    return (
+        <div className="card settings-card flush">
+            <h3>{t('pts.bets')}</h3>
+            <div className="setting-help" style={{padding: '0 16px 8px', marginTop: 0}}>{t('pts.betsHelp')}</div>
+            <div className="setting-row">
+                <div className="grow">
+                    <div className="setting-label">{t('pts.strategy')}</div>
+                    <div className="setting-help">{t(`pts.strategy.${b.strategy}` as Key)}</div>
+                </div>
+                <Select value={b.strategy} onChange={v => set(x => { x.strategy = v; })} options={[
+                    {value: 'smart', label: t('pts.smart')},
+                    {value: 'most_voted', label: t('pts.mostVoted')},
+                    {value: 'high_odds', label: t('pts.highOdds')},
+                ]}/>
+            </div>
+            <BetNumber label={t('pts.percent')} value={b.percent} min={1} max={100} onChange={v => set(x => { x.percent = v; })}/>
+            <BetNumber label={t('pts.maxPoints')} value={b.maxPoints} min={10} onChange={v => set(x => { x.maxPoints = v; })}/>
+            <BetNumber label={t('pts.minUsers')} value={b.minUsers} min={0} onChange={v => set(x => { x.minUsers = v; })}/>
+            <BetNumber label={t('pts.beforeClose')} value={b.secondsBeforeClose} min={3} max={60} onChange={v => set(x => { x.secondsBeforeClose = v; })}/>
         </div>
     );
 }
@@ -103,6 +148,12 @@ export default function Points() {
                 <Toggle on={settings.points.enabled} onChange={v => updateSettings(c => { c.points.enabled = v; })}/>
             </div>
 
+            {points?.betsNeedTos && (
+                <Banner icon={Dices} title={t('pts.tosTitle')}
+                        action={<Button variant="primary" size="sm" icon={ExternalLink} onClick={() => BrowserOpenURL('https://www.twitch.tv/')}>twitch.tv</Button>}>
+                    {t('pts.tosText')}
+                </Banner>
+            )}
             <div className="settings-cols points-cols">
                 <div className="settings-col">
                     <div className="card settings-card">
@@ -151,6 +202,7 @@ export default function Points() {
                             <Toggle on={settings.points.joinChat} onChange={v => updateSettings(c => { c.points.joinChat = v; })}/>
                         </div>
                     </div>
+                    <BetSettings/>
                     <div className="card settings-card">
                         <h3>{t('pts.howTitle')}</h3>
                         <div className="setting-help" style={{marginTop: 0}}>{t('pts.how')}</div>
