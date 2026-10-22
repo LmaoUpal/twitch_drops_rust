@@ -1,11 +1,42 @@
 import {Fragment, useEffect, useState} from 'react';
-import {AtSign, ChevronDown, ChevronRight, FolderOpen, GripVertical, KeyRound, LogOut, Pencil, Plus, RotateCcw, Timer, Users, X} from 'lucide-react';
-import {DefaultSettings, Logout, OpenConfigFolder} from '../../wailsjs/go/main/App';
+import {AtSign, ChevronDown, ChevronRight, FolderOpen, GripVertical, KeyRound, LogOut, Pencil, Plus, Repeat, Trash2, UserPlus, RotateCcw, Timer, Users, X} from 'lucide-react';
+import {DefaultSettings, Logout, OpenConfigFolder, RemoveAccount, SwitchAccount} from '../../wailsjs/go/main/App';
 import {config} from '../../wailsjs/go/models';
 import {useStore} from '../store';
 import {campaignPhase, setStreamerQueue, streamerQueue} from '../lib/derive';
 import {t, tn} from '../i18n';
 import {Avatar, Badge, Button, GameIcon, Segmented, Soon, Toggle} from '../components/ui';
+
+/** The signed-in account plus the other saved logins; one account mines at a time. */
+function Accounts() {
+    const {auth, accounts, setAddingAccount} = useStore();
+    const others = accounts.filter(a => !a.active);
+    return (
+        <div className="card settings-card">
+            <h3>{t('set.account')}</h3>
+            <div className="row" style={{gap: 12}}>
+                <Avatar src={auth.avatarUrl} name={auth.login} size={40}/>
+                <div className="grow col" style={{gap: 2}}>
+                    <span style={{fontSize: 14, fontWeight: 600}}>{auth.displayName || auth.login}</span>
+                    <span className="muted" style={{fontSize: 12}}>{t('set.earning')}</span>
+                </div>
+                <Button variant="danger" icon={LogOut} onClick={() => Logout()}>{t('set.logout')}</Button>
+            </div>
+            {others.map(a => (
+                <div key={a.key} className="row" style={{gap: 12}}>
+                    <Avatar src={a.avatarUrl} name={a.login} size={32}/>
+                    <span className="grow ellipsis" style={{fontWeight: 500}}>{a.displayName || a.login}</span>
+                    <Button size="sm" icon={Repeat} onClick={() => SwitchAccount(a.key)}>{t('acc.switch')}</Button>
+                    <Button size="sm" variant="ghost" icon={Trash2} title={t('acc.remove')} onClick={() => RemoveAccount(a.key)}/>
+                </div>
+            ))}
+            <div className="row" style={{gap: 12}}>
+                <Button size="sm" icon={UserPlus} onClick={() => setAddingAccount(true)}>{t('acc.add')}</Button>
+                <span className="faint grow" style={{fontSize: 12}}>{t('acc.oneAtATime')}</span>
+            </div>
+        </div>
+    );
+}
 
 function GamesPriority() {
     const {settings, updateSettings, snapshot, now} = useStore();
@@ -278,17 +309,7 @@ export default function Settings() {
             </div>
             <div className="settings-cols">
                 <div className="settings-col">
-                    <div className="card settings-card">
-                        <h3>{t('set.account')}</h3>
-                        <div className="row" style={{gap: 12}}>
-                            <Avatar src={auth.avatarUrl} name={auth.login} size={40}/>
-                            <div className="grow col" style={{gap: 2}}>
-                                <span style={{fontSize: 14, fontWeight: 600}}>{auth.displayName || auth.login}</span>
-                                <span className="muted" style={{fontSize: 12}}>{t('set.earning')}</span>
-                            </div>
-                            <Button variant="danger" icon={LogOut} onClick={() => Logout()}>{t('set.logout')}</Button>
-                        </div>
-                    </div>
+                    <Accounts/>
                     <GamesPriority/>
                     <ExcludedChannels/>
                 </div>

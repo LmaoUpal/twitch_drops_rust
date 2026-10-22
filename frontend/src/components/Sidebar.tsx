@@ -1,8 +1,10 @@
-import {ChevronsUpDown, Coins, Compass, Gift, LayoutDashboard, LucideIcon, Package, Pickaxe, ScrollText, Settings} from 'lucide-react';
+import {useRef, useState} from 'react';
+import {Check, ChevronsUpDown, Coins, Compass, Gift, LayoutDashboard, LucideIcon, Package, Pickaxe, ScrollText, Settings, UserPlus} from 'lucide-react';
+import {SwitchAccount} from '../../wailsjs/go/main/App';
 import {Page, useStore} from '../store';
 import {campaignPhase, findDrop, isRust} from '../lib/derive';
 import {fmtCountdown, fmtMinutes, isSet} from '../lib/format';
-import {Avatar, Progress} from './ui';
+import {Avatar, Progress, useDismiss} from './ui';
 import {t} from '../i18n';
 
 export const APP_VERSION = 'v0.5.0';
@@ -15,6 +17,40 @@ function NavItem({page, icon: Icon, label, count}: { page: Page; icon: LucideIco
             {label}
             {!!count && <span className="count">{count}</span>}
         </button>
+    );
+}
+
+/** The account row; opens a switcher with the saved logins and "Add account". */
+function AccountMenu() {
+    const {auth, accounts, setAddingAccount} = useStore();
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+    useDismiss(ref, open, () => setOpen(false));
+    return (
+        <div className="account-switch" ref={ref}>
+            {open && (
+                <div className="select-menu account-menu" role="menu">
+                    {accounts.map(a => (
+                        <button key={a.key} role="menuitem" className={a.active ? 'selected' : ''}
+                                onClick={() => { setOpen(false); if (!a.active) SwitchAccount(a.key); }}>
+                            <Avatar src={a.avatarUrl} name={a.login} size={20}/>
+                            <span className="grow ellipsis">{a.displayName || a.login}</span>
+                            {a.active && <Check size={14}/>}
+                        </button>
+                    ))}
+                    <div className="menu-sep"/>
+                    <button role="menuitem" onClick={() => { setOpen(false); setAddingAccount(true); }}>
+                        <UserPlus size={14}/>
+                        <span className="grow">{t('acc.add')}</span>
+                    </button>
+                </div>
+            )}
+            <button className="account" onClick={() => setOpen(v => !v)} aria-expanded={open} title={t('acc.switchHint')}>
+                <Avatar src={auth.avatarUrl} name={auth.login} size={24}/>
+                <span className="grow ellipsis">{auth.displayName || auth.login}</span>
+                <ChevronsUpDown size={14} className="faint"/>
+            </button>
+        </div>
     );
 }
 
@@ -90,11 +126,7 @@ export function Sidebar() {
             <div className="grow"/>
             <StatusCard/>
             <NavItem page="settings" icon={Settings} label={t('nav.settings')}/>
-            <div className="account">
-                <Avatar src={auth.avatarUrl} name={auth.login} size={24}/>
-                <span className="grow ellipsis">{auth.displayName || auth.login}</span>
-                <ChevronsUpDown size={14} className="faint"/>
-            </div>
+            <AccountMenu/>
         </aside>
     );
 }

@@ -12,7 +12,7 @@ import Settings from './pages/Settings';
 import Activity from './pages/Activity';
 
 function Shell() {
-    const {auth, page} = useStore();
+    const {auth, page, addingAccount, setAddingAccount} = useStore();
 
     if (auth.state === 'checking') {
         return (
@@ -23,6 +23,7 @@ function Shell() {
         );
     }
     if (auth.state !== 'loggedIn') return <Login/>;
+    if (addingAccount) return <Login onCancel={() => setAddingAccount(false)}/>;
 
     return (
         <div className="shell">

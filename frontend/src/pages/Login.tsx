@@ -1,19 +1,22 @@
 import {useEffect, useState} from 'react';
-import {CircleX, Clipboard, Copy, ExternalLink, LoaderCircle, Lock, Pickaxe, RefreshCw, ShieldAlert, WifiOff} from 'lucide-react';
-import {CancelLogin, Restore, StartLogin} from '../../wailsjs/go/main/App';
+import {ArrowLeft, CircleX, Clipboard, Copy, ExternalLink, LoaderCircle, Lock, Pickaxe, RefreshCw, ShieldAlert, WifiOff} from 'lucide-react';
+import {CancelLogin, Restore, StartLogin, SwitchAccount} from '../../wailsjs/go/main/App';
 import {main} from '../../wailsjs/go/models';
-import {BrowserOpenURL, ClipboardSetText} from '../../wailsjs/runtime/runtime';
+import {BrowserOpenURL, ClipboardSetText, EventsOn} from '../../wailsjs/runtime/runtime';
 import {useStore} from '../store';
 import {fmtCountdown} from '../lib/format';
-import {Button, TwitchIcon} from '../components/ui';
+import {Avatar, Button, TwitchIcon} from '../components/ui';
 import {t} from '../i18n';
 
 function formatCode(code: string) {
     return code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
 }
 
-export default function Login() {
-    const {auth, now} = useStore();
+/** The sign-in screen. With onCancel it adds another account while one stays signed in. */
+export default function Login({onCancel}: { onCancel?: () => void }) {
+    const {auth, accounts, now} = useStore();
+    const adding = !!onCancel;
+    const others = adding ? [] : accounts.filter(a => !a.active);
     const [prompt, setPrompt] = useState<main.LoginPrompt | null>(null);
     const [expiresAt, setExpiresAt] = useState(0);
     const [error, setError] = useState('');
@@ -23,9 +26,12 @@ export default function Login() {
     useEffect(() => {
         if (auth.error) setError(auth.error);
     }, [auth.error]);
+    // While another account is signed in the auth status stays loggedIn, so failures come separately.
+    useEffect(() => EventsOn('login:error', (e: string) => setError(e)), []);
 
     const expired = !!prompt && (now >= expiresAt || /expired/i.test(error));
-    const unreachable = auth.state === 'offline' || /dial|timeout|no such host|connect/i.test(error);
+    const offline = !adding && auth.state === 'offline';
+    const unreachable = offline || /dial|timeout|no such host|connect/i.test(error);
 
     async function start() {
         setError('');
@@ -47,6 +53,11 @@ export default function Login() {
         CancelLogin();
         setPrompt(null);
         setError('');
+    }
+
+    function back() {
+        CancelLogin();
+        onCancel?.();
     }
 
     let card;
@@ -88,9 +99,9 @@ export default function Login() {
     } else {
         card = (
             <>
-                <h1>{t('login.title')}</h1>
-                <p>{t('login.intro')}</p>
-                {(error || auth.state === 'offline') && (
+                <h1>{adding ? t('acc.addTitle') : t('login.title')}</h1>
+                <p>{adding ? t('acc.addIntro') : t('login.intro')}</p>
+                {(error || offline) && (
                     <div className="status-line error" style={{alignItems: 'flex-start', padding: 14}}>
                         {unreachable ? <WifiOff size={16}/> : <CircleX size={16}/>}
                         <div className="grow">
@@ -99,7 +110,7 @@ export default function Login() {
                         </div>
                     </div>
                 )}
-                {auth.state === 'offline' ? (
+                {offline ? (
                     <Button variant="primary" size="lg" block icon={RefreshCw} onClick={() => Restore()}>{t('common.retry')}</Button>
                 ) : (
                     <Button variant="primary" size="lg" block disabled={busy} onClick={start}>
@@ -107,11 +118,23 @@ export default function Login() {
                         {error ? t('common.retry') : t('login.login')}
                     </Button>
                 )}
-                {error || auth.state === 'offline' ? (
+                {error || offline ? (
                     <button className="link-btn" onClick={() => ClipboardSetText(error || auth.error)}><Clipboard size={14}/>{t('login.copyErr')}</button>
                 ) : (
                     <span className="row faint" style={{fontSize: 12, gap: 6}}><Lock size={12}/>{t('login.password')}</span>
                 )}
+                {others.length > 0 && (
+                    <div className="saved-accounts">
+                        <span className="label">{t('acc.saved')}</span>
+                        {others.map(a => (
+                            <Button key={a.key} block onClick={() => SwitchAccount(a.key)}>
+                                <Avatar src={a.avatarUrl} name={a.login} size={20}/>
+                                <span className="grow ellipsis" style={{textAlign: 'left'}}>{a.displayName || a.login}</span>
+                            </Button>
+                        ))}
+                    </div>
+                )}
+                {adding && <button className="link-btn" onClick={back}><ArrowLeft size={14}/>{t('acc.back')}</button>}
             </>
         );
     }

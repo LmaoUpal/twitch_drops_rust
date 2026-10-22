@@ -149,23 +149,28 @@ export interface SelectOption<T extends string> {
     label: string;
 }
 
+/** Calls close on a click outside ref or on Escape while open. */
+export function useDismiss(ref: React.RefObject<HTMLElement | null>, open: boolean, close: () => void) {
+    useEffect(() => {
+        if (!open) return;
+        const outside = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) close(); };
+        const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+        document.addEventListener('mousedown', outside);
+        document.addEventListener('keydown', esc);
+        return () => {
+            document.removeEventListener('mousedown', outside);
+            document.removeEventListener('keydown', esc);
+        };
+    }, [open]);
+}
+
 /** Dropdown in the app style; the native <select> popup ignores the dark theme in WebView2. */
 export function Select<T extends string>({value, options, onChange, icon: Icon}: {
     value: T; options: SelectOption<T>[]; onChange(v: T): void; icon?: LucideIcon;
 }) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
-    useEffect(() => {
-        if (!open) return;
-        const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
-        const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-        document.addEventListener('mousedown', close);
-        document.addEventListener('keydown', esc);
-        return () => {
-            document.removeEventListener('mousedown', close);
-            document.removeEventListener('keydown', esc);
-        };
-    }, [open]);
+    useDismiss(ref, open, () => setOpen(false));
     const current = options.find(o => o.value === value) ?? options[0];
     return (
         <div className="select" ref={ref}>

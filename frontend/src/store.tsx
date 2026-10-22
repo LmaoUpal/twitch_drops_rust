@@ -1,5 +1,5 @@
 import {createContext, ReactNode, useContext, useEffect, useRef, useState} from 'react';
-import {GetActivity, GetAuthStatus, GetAutoState, GetCampaigns, GetPointsState, GetSettings, GetWatchState, SaveSettings} from "../wailsjs/go/main/App";
+import {GetAccounts, GetActivity, GetAuthStatus, GetAutoState, GetCampaigns, GetPointsState, GetSettings, GetWatchState, SaveSettings} from "../wailsjs/go/main/App";
 import {activity, catalog, config, main} from "../wailsjs/go/models";
 import {EventsOn} from "../wailsjs/runtime/runtime";
 import {setLang} from "./i18n";
@@ -8,6 +8,10 @@ export type Page = 'dashboard' | 'campaigns' | 'drops' | 'points' | 'inventory' 
 
 interface Store {
     auth: main.AuthStatus;
+    accounts: main.AccountInfo[];
+    /** The login screen is open to add another account while one is signed in. */
+    addingAccount: boolean;
+    setAddingAccount(v: boolean): void;
     snapshot: catalog.Snapshot | null;
     watch: main.WatchState | null;
     auto: main.AutoState | null;
@@ -57,6 +61,8 @@ function useTheme(theme: string) {
 
 export function StoreProvider({children}: { children: ReactNode }) {
     const [auth, setAuth] = useState<main.AuthStatus>({state: 'checking', login: '', displayName: '', avatarUrl: '', error: ''});
+    const [accounts, setAccounts] = useState<main.AccountInfo[]>([]);
+    const [addingAccount, setAddingAccount] = useState(false);
     const [snapshot, setSnapshot] = useState<catalog.Snapshot | null>(null);
     const [watch, setWatch] = useState<main.WatchState | null>(null);
     const [auto, setAuto] = useState<main.AutoState | null>(null);
@@ -70,6 +76,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
 
     useEffect(() => {
         GetAuthStatus().then(setAuth);
+        GetAccounts().then(a => setAccounts(a ?? []));
         GetCampaigns().then(setSnapshot);
         GetWatchState().then(setWatch);
         GetAutoState().then(setAuto);
@@ -78,6 +85,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
         GetActivity().then(e => setLog(e ?? []));
         const offs = [
             EventsOn('auth:status', setAuth),
+            EventsOn('accounts:update', (a: main.AccountInfo[]) => setAccounts(a ?? [])),
             EventsOn('campaigns:update', setSnapshot),
             EventsOn('watch:status', setWatch),
             EventsOn('auto:status', setAuto),
@@ -86,6 +94,9 @@ export function StoreProvider({children}: { children: ReactNode }) {
         ];
         return () => offs.forEach(off => off());
     }, []);
+
+    // A finished login (or a switch) lands on the new account, so the add screen closes.
+    useEffect(() => setAddingAccount(false), [auth.login]);
 
     // Settings save automatically, debounced so typing doesn't hit the disk per key.
     function updateSettings(change: (c: config.Config) => void) {
@@ -104,7 +115,7 @@ export function StoreProvider({children}: { children: ReactNode }) {
     useTheme(settings?.theme ?? 'dark');
     setLang(settings?.language ?? 'en');
     return (
-        <Ctx.Provider value={{auth, snapshot, watch, auto, points, settings, activity: log, now, page, setPage, updateSettings, settingsError}}>
+        <Ctx.Provider value={{auth, accounts, addingAccount, setAddingAccount, snapshot, watch, auto, points, settings, activity: log, now, page, setPage, updateSettings, settingsError}}>
             {children}
         </Ctx.Provider>
     );

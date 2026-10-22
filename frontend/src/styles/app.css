@@ -173,14 +173,32 @@ a {
 .dot.error { background: var(--error); }
 .dot.live { background: var(--live); }
 
+.account-switch { position: relative; }
+
 .account {
     display: flex;
     align-items: center;
     gap: 10px;
+    width: 100%;
     padding: 8px 10px;
+    border: none;
     border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
     font-weight: 500;
+    text-align: left;
+    cursor: pointer;
 }
+
+.account:hover, .account[aria-expanded="true"] { background: var(--surface-2); }
+
+.select-menu.account-menu { top: auto; bottom: calc(100% + 4px); left: 0; right: 0; }
+.select-menu.account-menu button { height: 34px; }
+.menu-sep { height: 1px; margin: 2px 4px; background: var(--border); }
+
+.saved-accounts { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.saved-accounts .label { font-size: 12px; color: var(--text-tertiary); }
 
 .main {
     flex: 1;
