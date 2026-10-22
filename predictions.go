@@ -54,6 +54,7 @@ func (a *App) onPrediction(ctx context.Context, run *pointsRun, p points.Predict
 	pb, known := run.bets[p.ID]
 	switch {
 	case !known && p.Status == "ACTIVE":
+		run.pruneBets(time.Now())
 		pb = &pendingBet{pred: p, login: ch.Login}
 		run.bets[p.ID] = pb
 		delay := max(time.Until(p.BetAt(secs)), 0)
@@ -87,20 +88,17 @@ func (a *App) placeBet(ctx context.Context, run *pointsRun, id string) {
 	a.mu.Unlock()
 	i := slices.IndexFunc(cfg.Channels, func(c config.PointsChannel) bool { return strings.EqualFold(c.Login, login) })
 	if !cfg.Enabled || i < 0 || !cfg.Channels[i].Predictions {
-		run.forget(id)
 		return
 	}
 	name := a.pointsChannelName(login)
 	info, err := run.client.ChannelPoints(ctx, login)
 	if err != nil {
 		slog.Warn("Couldn't read the balance for a prediction on "+name, "channel", name, "err", err)
-		run.forget(id)
 		return
 	}
 	bet, err := points.Decide(p, info.Balance, cfg.Bets, time.Now())
 	if err != nil {
 		slog.Info(fmt.Sprintf("Skipped prediction %q on %s: %v", p.Title, name, err), "channel", name)
-		run.forget(id)
 		return
 	}
 	err = run.client.MakePrediction(ctx, p.ID, bet.OutcomeID, bet.Points)
@@ -108,11 +106,9 @@ func (a *App) placeBet(ctx context.Context, run *pointsRun, id string) {
 	case errors.Is(err, gql.ErrMustAcceptTOS):
 		slog.Warn("Can't bet: Twitch wants the predictions terms accepted. Make one prediction by hand on twitch.tv, then bets work.", "channel", name)
 		a.setPoints(func(s *PointsState) { s.BetsNeedTOS = true })
-		run.forget(id)
 		return
 	case err != nil:
 		slog.Warn("Bet failed on "+name, "channel", name, "err", err)
-		run.forget(id)
 		return
 	}
 	run.mu.Lock()
@@ -147,13 +143,6 @@ func (a *App) onPredictionResult(run *pointsRun, r realtime.PredictionResult) {
 	a.updatePointsChannel(byLogin(pb.login), func(s *PointsChannelState) { s.BetProfit += profit })
 }
 
-// forget drops a prediction the app won't bet on.
-func (r *pointsRun) forget(id string) {
-	r.mu.Lock()
-	delete(r.bets, id)
-	r.mu.Unlock()
-}
-
 func (a *App) pointsChannelByID(id string) (models.Channel, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -174,4 +163,16 @@ func (a *App) pointsChannelName(login string) string {
 		}
 	}
 	return login
+}
+
+// pruneBets drops predictions that closed long ago without a result reaching the app
+// (unsubscribed channel, missed event); run.mu must be held. Predictions are kept until
+// resolved so later vote updates don't schedule a second decision.
+func (r *pointsRun) pruneBets(now time.Time) {
+	for id, pb := range r.bets {
+		if now.Sub(pb.pred.ClosesAt()) > 6*time.Hour {
+			pb.timer.Stop()
+			delete(r.bets, id)
+		}
+	}
 }
